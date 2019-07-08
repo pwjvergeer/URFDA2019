@@ -1,0 +1,658 @@
+---
+title: "Exercise - Visualizations"
+author: "Marc A.T. Teunis"
+date: "`r Sys.Date()`"
+output: 
+   BiocStyle::html_document:
+    toc: true
+    toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+# change these options to hide or show results, code and plots
+knitr::opts_chunk$set(echo = FALSE,
+                      fig.show = 'hide', 
+                      results = 'hide', 
+                      warning = FALSE, 
+                      error = FALSE, 
+                      message = FALSE)
+```
+
+```{r root_object, echo = TRUE}
+## defines the root of the project for later use
+require("rprojroot") || utils::install.packages("rprojroot")
+library(rprojroot)
+root <- find_root_file(criterion = is_rstudio_project)
+```
+
+## Packages
+```{r, load_packages, echo=TRUE}
+## the packages that you minimally need for this exercise
+library(tidyverse)
+library(cowplot)
+library(readr)
+library(readxl)
+## add more if you need them
+```
+
+# End product
+
+**Generate a new RMarkdown file containing the answers to all questions below and render it to HTML. Upload your _Rmd AND HTML_ file to your private github repo under the corresponding (see file name) exercise number** 
+
+## `{ggplot2}`
+As shown in the demo, the {ggplot2} package is a very strong tool to make plots. It is somewhat more difficult to master than other plotting systems in R, but it is much stronger and much, much more versatile.
+
+In order to force you to study ggplot syntax, you will have to create plots in this exercise using {ggplot2} syntax only!!
+
+## Introduction
+In most cases, plotting is the main tool by which you get a ‘feel’ for the data. In many cases, the plots require some work on the data first, so we will have to process the data as well. A very important part of your preliminary analysis involves knowing the distribution of the data. That is, what are its typical values, and how do they relate to one another or to another data set. Probably the easiest plotting tool for this is the histogram. This is available as the `geom_histogram()` or `geom_freypoly()` in {ggplot2}. Alternatively you can use `geom_boxplot()` to create boxplots. 
+
+## **Exercise 1**
+In this exercise we will use a build-in dataset from the {datasets} package. The data can be loaded by typing 
+```
+airq <- datasets::airquality
+```
+in your script. Try it now!
+
+You will see a new object called chicks in you Global Environment.
+```{r}
+## load dataset airquality
+airq <- datasets::airquality
+```
+
+1A) Inspect the data
+
+ - Are there any missing values, if yes how many? (`sum(is.na()`)
+ - What types of variables do we have? (use the `str()` command)
+ - Convert to a tibble with `as_tibble()`
+ - Are all the variables of the right type?
+ - Which variables are categorical?
+ - Which are numeric?
+ - Change grouping/categorical variables to facors if neccesary
+ 
+```{r}
+head(airq)
+sum(is.na(airq)) # so no missing values
+str(airq) # you see that all variables have the right type
+```
+
+1B) Change all variable names to lower type case
+
+Write a line of code that changes all `names()` of the variables to lower-case. Also, replace the dot in the variable name `sola.r` for an "_" 
+```{r}
+names(airq) <- tolower(names(airq))
+head(airq)
+names(airq) <- str_replace_all(names(airq), pattern = "\\.", replacement = "_")
+head(airq)
+
+```
+
+1C) Scatter plot of all the data
+
+Create a plot in your Rmd script that shows all the data points. Plot the variable `month` on the x-axis and the variable `wind` on the y-axis.
+
+**ANSWER**
+```{r}
+names(airq)
+plot_1c <-  airq %>%
+  ggplot(aes(x = month, y = wind)) +
+  geom_point(aes(), alpha = 0.4) 
+
+#  geom_jitter(aes(x = time, y = weight), position = "jitter") 
+  
+plot_1c
+```
+
+1D) Overplotting
+
+You will see that the plot contains many points that are overlaid. How can you solve this "overplotting" problem?
+
+**TIPs**
+
+ - Look-up overplotting in the "R for Data Science" book
+ - What does `alpha()` do?
+ - Maybe use geom_jitter() as an extra layer in your graph
+ (look at `?geom_jitter`)
+
+**ANSWER**
+```{r}
+names(airq)
+plot_1d <-  airq %>%
+  ggplot(aes(x = month, y = wind)) +
+  geom_point(aes(), alpha = 0.4, position = "jitter") #
+#+
+ # geom_jitter(position = "jitter") 
+  
+plot_1d
+
+```
+
+1E) Plot the relationship between wind and month with a straight line. 
+
+**ANSWER**
+```{r}
+names(airq)
+plot_1e <-  airq %>%
+  ggplot(aes(x = month, y = wind)) +
+  geom_point(aes(), alpha = 0.4, position = "jitter")  +
+  geom_smooth(method = "lm")
+  #
+#+
+ # geom_jitter(position = "jitter") 
+  
+plot_1e
+
+```
+
+1F) summarize the wind velocity per month (call this `mean_month`), plot the relationship between `month` and `mean_wind`.
+
+
+# **Exercise 2. Overplotting solved by colours**
+
+For this exercise we wil use a new dataset "tb_burden":
+
+The file: "/data/messy/TB_data_dictionary_2016-12-08.csv" contains additional info on the variables in the datafile.
+
+A) Read the file "/data/messy/TB_burden_countries_2016-12-08_messy.csv" into R
+```{r, echo=TRUE}
+tb_burden <- read.csv(file = file.path(root,
+                                       "data",
+                                       "messy",
+                                       "TB_burden_countries_2016-12-08_messy.csv"))
+
+
+names(tb_burden)
+```
+
+B) Selection of relevant variables
+For the subsequent analysis we will use the following variables:
+ 
+ `country`
+ `iso3`
+ `g_whoregion`
+ `year`
+ `e_inc_num`
+ `e_mort_exc_tbhiv_num`
+ `e_pop_num`
+ 
+ Select the above variables from the dataset.
+ 
+```{r}
+names(tb_burden)
+tb_data_selected <- tb_burden %>%
+  dplyr::select(
+    iso3,
+    country,
+    g_whoregion,
+    year,
+    e_inc_num,
+    e_mort_exc_tbhiv_num,
+    e_pop_num,
+  )
+
+```
+ 
+C) Load the data dictionary into R ("/data/messy/TB_data_dictionary_2016-12-08_messy.csv")
+
+Use `dplyr::filter()` together with the `%in%` operator to pull out the descriptions of the variables from the data dictionary. Do all the variables have a discription. 
+
+```{r}
+dictionary <- read_csv("./data/messy/TB_data_dictionary_2016-12-08.csv")
+
+## filter solution
+dplyr::filter(dictionary, variable_name %in% names(tb_data_selected))
+
+
+```
+
+## **Exercise 3** Exploratory graphs
+
+3A) Plot the total number of Tuberculosis cases (y axis), for each country, for each year (x axis. Think about how to solve the overplotting this creates. How do you display country?
+
+Which country has the highest number of annual TB cases?
+
+```{r}
+tb_burden %>%
+  ggplot(aes(x = year, y = log10(e_inc_num))) +
+  geom_point(aes(colour = country), position = "jitter") +
+  theme(legend.position = "none") +
+  ggtitle("Number of total TB cases")
+
+tb_burden %>%
+  ggplot(aes(x = year, y = e_inc_num)) +
+  geom_point(aes(colour = country), position = "jitter") +
+  theme(legend.position = "none") +
+  ggtitle("Number of total TB cases")
+
+tb_burden %>%
+  dplyr::filter(e_inc_num > 2500000) %>%
+  as_tibble() %>%
+  select(country) %>%
+  unique()
+```
+
+3B) Calculate the incidence of TB per 1.000 inhabitants, per country, per year. Plot the incendence (y axis) for each country and each year (x axis), for only those countries that have a higer incidence of more than 5 per 1000 inhabitants.
+
+```{r}
+tb_data_selected %>%
+  as_tibble() %>%
+  mutate(incidence_1e3 = (e_inc_num/e_pop_num)*1000) %>%
+  dplyr::filter(incidence_1e3 > 5) %>%
+  ggplot(aes(x = year,
+             y = incidence_1e3)) +
+    geom_point(aes(colour = country)) +
+  theme(legend.position = "none") +
+  ggtitle("Number of total TB cases")
+
+```
+
+3C) Which country had the highest incidence of TB in the year 2010?
+```{r}
+tb_data_selected %>%
+  as_tibble() %>%
+  mutate(incidence_1e3 = (e_inc_num/e_pop_num)*1000) %>%
+  dplyr::filter(incidence_1e3 > 5,
+                year == "2010") %>%
+  arrange(desc(incidence_1e3)) %>%
+  select(country, incidence_1e3)
+```
+
+3D) Average incidence per WHO region
+Show the relationship over years, between the WHO regions and the median TB incidence/1000 per region with a plot.
+
+```{r}
+names(tb_data_selected)
+tb_data_selected %>%
+  as_tibble() %>%
+  mutate(incidence_1e3 = (e_inc_num/e_pop_num)*1000) %>%  
+  group_by(g_whoregion, year) %>%
+  summarize(median_incidence_per_region = median(incidence_1e3)) %>%
+  ggplot(aes(x = year, 
+             y = median_incidence_per_region)) +
+    geom_point(aes(colour = g_whoregion)) +
+  geom_line(aes(group = g_whoregion, colour = g_whoregion)) +
+  ggtitle("Mean Incidence of TB per WHO region")
+  
+```
+
+**BONUS** 
+Calculate the overall TB incidence per 1000 people for each WHO region, Plot the relationship between this overall incidence and the WHO region, over the years. Compare this result with your plot under 3D.  
+
+**EXERCISE 4** Join with World data
+
+To study the relationship between TB incidence and socio-economical and/or geographical characteristics we will use the TB Burden data (selection of the variables) together with the Geographical/Socio-economical dataset of the World (from `{tmap}`, `data("World")`)
+
+4A) Load the World data from the `{tmap}` package (`data("World")`) and combine (left_join the world data to the TB_burden data (with selected variables)). Be sure to indicate the keys for the join (join by ISO3 which is present in both datasets)
+
+```{r}
+library(tmap)
+data("World") # from the tmap package
+names(World)
+names(tb_burden)
+
+World <- World %>%
+  dplyr::rename(iso3 = iso_a3)
+
+joined_data <- left_join(World, tb_data_selected, by = "iso3")
+names(joined_data)
+
+joined_data <- joined_data %>%
+  mutate(incidence_1e3 = (e_inc_num/e_pop_num)*1000)
+```
+
+4B) Plot the relationship between the median income per capita (gdp_cap_est) per WHO region and the median TB incidence per WHO region, use facets to handle the years.
+
+```{r}
+names(joined_data) 
+joined_data %>%
+  na.omit() %>%
+  ggplot(aes(x = gdp_cap_est,
+             y = incidence_1e3)) +
+  geom_point(alpha = 0.2) +
+  facet_wrap(~ year) +
+  geom_smooth(se = FALSE) +
+  
+```
+
+## **EXERCISE 5** Histograms
+
+5A) Create histograms of the following variables of the joined data:
+`incidence_1e3`
+`gdp_cap_est`
+
+Account for `g_whoregion` in your plot. Take all years together in the histograms.
+
+```{r}
+joined_data %>%
+  ggplot(aes(x = incidence_1e3)) +
+  geom_histogram(aes(fill = g_whoregion), bins = 50)
+
+
+joined_data %>%
+  ggplot(aes(x = gdp_cap_est)) +
+  geom_histogram(aes(fill = g_whoregion), bins = 50)
+```
+
+5B Turn the code of the histgrams into code that plots frequency polynomes
+Maybe do a log transformation on the incidence and/or gdp? Use factes for the years.
+
+```{r}
+joined_data %>%
+  ggplot(aes(x = log10(incidence_1e3))) +
+  geom_freqpoly(aes(colour = g_whoregion), size = 1) +
+  facet_wrap(~year)
+
+
+joined_data %>%
+  ggplot(aes(x = log10(gdp_cap_est))) +
+  geom_freqpoly(aes(colour = g_whoregion), size = 1) +
+  facet_wrap(~year)
+```
+
+## **EXERCISE 6** Maps
+
+6A) Go over the vignette for the `{tmap}` package
+
+6B) Generate a map of the World with population size per metropolitan area, rivers and names, as in the tmap vignette. Play around with the different settings of the graph to learn what controls what in the map.
+```{r}
+library(tmap)
+library(tmaptools)
+
+data(World, metro, rivers, land)
+
+tmap_mode("plot")
+## tmap mode set to plotting
+tm_shape(land) +
+    tm_raster("elevation", palette = terrain.colors(10)) +
+tm_shape(World) +
+    tm_borders("white", lwd = .5) +
+    tm_text("iso_a3", size = "AREA") +
+tm_shape(metro) +
+    tm_symbols(col = "red", size = "pop2020", scale = .5) +
+tm_legend(show = FALSE)
+
+```
+
+6C) Plot the incidence/100.000 inhabitants of TB for each region on a map for the year 2000. Create an additional map that plot the data (incidence) for the year 2010.
+
+```{r}
+names(joined_data)
+
+library(tmaptools)
+data(World)
+library(internr)
+
+tmap_mode("view")
+
+joined_data_2000 <- joined_data %>%
+  dplyr::filter(year == "2000") 
+
+plot_2000 <- tm_shape(joined_data_2000) +
+  tm_borders(col = "grey10",
+             lwd = 0.1,
+             lty = "dashed",
+             alpha = 0.5) +
+  tm_tiles("http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png") +
+#  tm_shape(joined_data_2000) +
+  tm_polygons("incidence_1e3") +
+#  tm_shape(joined_data_2000) +
+#  tm_polygons("gdp_cap_est", col = "blue") +
+  tm_legend(show = FALSE) 
+  
+  
+
+joined_data_2010 <- joined_data %>%
+  dplyr::filter(year == "2010") 
+
+plot_2010 <-  tm_shape(joined_data_2010) +
+  tm_borders(col = "grey10",
+             lwd = 0.1,
+             lty = "dashed",
+             alpha = 0.5) +
+  tm_tiles("http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png") +
+#  tm_shape(joined_data_2000) +
+  tm_polygons("incidence_1e3") +
+#  tm_shape(joined_data_2000) +
+#  tm_polygons("gdp_cap_est", col = "blue") +
+  tm_legend(show = FALSE) +
+  tm_t
+
+plot_2000
+plot_2010
+
+#tmap_mode("plot")
+
+## arrange plots
+tmap_arrange(plot_2000, plot_2010)
+```
+
+6D) Greenland? 
+There seem to be also some cases in Greenland. Pull out all the data for Greenland and illustrate this dat with a graph of choice
+
+
+
+
+## **BONUS EXERCISE 7**
+
+## Exercise 3; Relational Genomics Data
+Exercise 3 is a more difficult and challenging exercise and specific for Biology. It uses data in a form that is often used in the Life Sciences: A Matrix with nummeric values. The file contains many variables, that are all deletions of certain genes. The rownames are the gene names for the gene in which the deletion was performed.
+
+The datafile can be found in : "//root/data/exp_profiles_gstf.M.txt"
+
+In two seperate files meta-data is stored that provides extra information:
+
+ - information on the features (genes) can be found in "//root/data/SGD_features.txt"
+ - information on the headers of the features file can be found in 
+"//root/data/SGD_features.features" 
+
+## Data load
+The code below loads the data, copy it to your Rmd for this exercise.
+Load the data from exp_profiles_gstf_cf.M.txt (This file contains the M values, or log2 fold-change gene expression changes caused by removing (deleting) a particular gene).
+
+```{r, load_data, echo =  TRUE}
+file_path <- file.path(root, "data", "exp_profiles_gstf_cf.M.txt")
+
+?read_table2
+expression_gstf <- read.table(file = file_path)
+```
+
+## Histograms
+
+3A) One histogram for one variable
+
+Create a histogram for the variable `$msn2_del`. Play with the number of bins. Specify labels and provide a title.
+
+**TIPs**
+
+ - Remember to set the `aes(msn2_del)` argument.
+ - Play with the argument `bins = `
+ - Use `ggtitle()`, `xlab()` and `ylab()` to create labels of the axes and the plot title
+ 
+**ANSWER 3A**
+```{r, histograms_3A}
+ggplot(data = expression_gstf, aes(msn2_del)) +
+  geom_histogram(bins = 100) + ylab("Count") +
+  xlab("log2") + ggtitle("Histogram of msn2_del")
+```
+
+3B) Two distributions in one plot
+Plot, in the same graph the distribution data for the phd1_del (use a different color. TIP: remember the difference between putting the mappings for aes in the ggplot() call and the geom_ call?).
+
+Create two plots for 3B: one using `geom_histogram()` and one using `geom_freqpoly()`. Put the two plots in one panel. Plot a different color for each variable in your two plots.
+
+Label the plot apropriately.
+
+**TIPs**
+ - To plot two geoms in one graph for two different variables, with two different colors: put the `aes()` call inside the call to the `geom_`, like below.
+
+``` 
+ plot <- `ggplot(data = ...) + 
+ geom_histogram(aes(variable_1), bins = ..., color = "pick_a_color") +
+  geom_histogram(aes(variable_2), bins = ..., color = "pick_another_color")
+  
+ - To plot multiple plots in a panel look at the package {cowplot}   
+```
+
+**ANSWER 3B**  
+```{r}
+## freqpoly
+freqpoly <- ggplot(data = expression_gstf) +
+  geom_freqpoly(aes(msn2_del), bins = 100, colour = "darkred") + 
+  geom_freqpoly(aes(phd1_del), bins = 100, colour = "blue",
+                alpha = 0.9) + 
+  ylab("Count") +
+  xlab("log2") + ggtitle("Freqpolys msn2_del & phd1_del")
+freqpoly
+
+## histograms
+histograms <- ggplot(data = expression_gstf) +
+  geom_histogram(aes(msn2_del), bins = 100, 
+                 colour = "darkred") + 
+  
+  geom_histogram(aes(phd1_del), bins = 100, 
+                 colour = "blue", alpha = 0.9) + 
+  ylab("Count") +
+  xlab("log2") + ggtitle("Histograms msn2_del phd1_del")
+
+histograms
+## to write the plot to a file
+#?pdf
+#pdf(file = paste0(root, "/images/exercise_histogram2_3.pdf"))
+cowplot::plot_grid(freqpoly, histograms)
+#dev.off()
+```
+
+## Transforming the data before plotting
+If we want to plot multiple variables in one plot it is more convenient to change the dataset to a different format.
+
+The code (we will learn how to do this later) for transforming the data to a stacked format is:
+```{r, echo = TRUE}
+# ?gather
+# add extra column with gene names
+expression_gstf$sgid <- rownames(expression_gstf)
+
+expression_gstf_stacked <- expression_gstf %>%
+  gather(swd1_del:btt1_del, key = deletions, value = log2)
+
+head(expression_gstf_stacked)
+```
+
+The data is now in stacked format where we have counts for each variable in one colomn. The stacked format is more suitable to be able to plot groups of data.
+
+## New histograms with the "stacked" dataset
+
+3C) Create a set of frequency polynoms (`geom_freqpoly()`) that display the distibution of three deletions in the data: "ms2_del", "nhp6b_del" and "fkh1_del"
+Use the new dataset "expression_gstf_selected" created by the code below to create the plot
+```{r, echo=TRUE, results='markup'}
+str(expression_gstf_stacked)
+## convert grouping variables to factors
+expression_gstf_stacked$sgid <- as.factor(expression_gstf_stacked$sgid)
+expression_gstf_stacked$deletions <- as.factor(expression_gstf_stacked$deletions)
+
+## selecting data from "nhp6a_del","nhp6b_del" and "fkh1_del" only
+expression_gstf_selected <- expression_gstf_stacked %>% 
+  filter(deletions == "msn2_del" | 
+         deletions == "nhp6b_del" |                                             
+          deletions == "fkh1_del")
+head(expression_gstf_selected)
+```
+
+**ANSWER 3C**
+```{r}
+freqpoly_new <- ggplot(data = expression_gstf_selected) +
+  geom_freqpoly(aes(x = log2, color = deletions), 
+                stat = "density")
+freqpoly_new
+```
+
+3D) Scatter plot
+
+Scatter plots are used to show relations between two numerical variables. Transcription factors 
+`rtg1` and `rtg3` function together as a dimer, so you would expect the transcriptional response to be similar for these deletions.  Plot them against each other to see if this holds.
+
+Use the dataset `expression_gstf` to answer 3D
+
+**TIPs**
+
+ - Try to solve overplotting issues with settign alpha for transparency of the points 
+
+```{r}
+
+ggplot(data = expression_gstf, aes(x = rtg1_del, y = rtg3_del)) +
+  geom_point(alpha = 0.5) +
+  ggtitle("RTG1 vs RTG3") +
+  xlab("RTG1 (log2M)") +
+  ylab("RTG3 (log2M)")
+
+```
+
+
+Let’s add to this plot a text showing the linear correlation between the two. It is calculated using the `annotate()` function. To position the annotation you can specify coordinates that correspond to the x- and y-axis values. For example, see what happens to the annotation when you specify `x = -2, y = 5`. Try different values until you are satisfied. `annnotate()` also takes extra argument that specify the type of the label. Choose "text" here.  
+
+First calculate the correlation between rtg1 and rtg2 using the `cor()` function.
+
+```{r, echo=TRUE}
+cor <- cor(expression_gstf$rtg1_del, expression_gstf$rtg3_del)
+cor <- round(cor, 4)
+```
+
+Use the cor label to annotate the plot from 3D.
+
+```{r}
+cor <- cor(expression_gstf$rtg1_del, expression_gstf$rtg3_del)
+cor <- round(cor, 4)
+
+ggplot(data = expression_gstf, aes(x = rtg1_del, y = rtg3_del)) +
+  geom_point(alpha = 0.5) +
+  ggtitle("RTG1 vs RTG3") +
+  xlab("RTG1 (log2M)") +
+  ylab("RTG3 (log2M)") +
+  annotate("text", x = -2, y = 5, 
+           label = paste("corr. coeffiecient", cor, sep = " "))
+```
+
+Let’s highlight the genes that are significantly changed. For this we need the p-values. You can find them in exp_profiles_gstf_cf.p_value.txt. Read this into your session. Do the files have the same row and column names? 
+
+How would you check this using the functions all(), rownames() and colnames()  and the `==` operator? Use `names()` to get the variable names.
+
+**TIPs**
+
+ - Get the genes for which the p-value is < 0.05
+ - Select these genes from the `expression_stacked` dataset by using indexing, create a new dataset from this filtered data, call this `significant_gstf`
+ - Create a scatter plot where you plot `deletions` vs `log2`
+ - Highlight in this plot the non-significant genes. Set the aes for the second layer to `data = non_significant_deletions`
+ 
+```{r}
+path_to_pvalues <- file.path(root, "data", "exp_profiles_gstf_cf.p_value.txt")
+p_values <- read_tsv(path_to_pvalues)
+
+names(p_values)
+significant_gstf <- p_values %>% gather(swd1_del:btt1_del, key = deletions, value = p_value) 
+
+significant_gstf <- significant_gstf %>% filter(p_value < 0.05)
+
+index <- unique(significant_gstf$X1)
+non_significant_deletions <- expression_gstf_stacked %>%
+  filter(!sgid %in% index)
+```
+
+```{r, eval=FALSE}
+# plot attempt
+
+sample <- sample_frac(expression_gstf_stacked, 0.3)
+
+
+final_plot <- ggplot(data = sample, aes(x = deletions, y = log2)) +
+  geom_point(alpha = 0.9) +
+  ggtitle("All deletions - Not-significant") +
+  xlab("Deletions") +
+  ylab("Log2(M)") +
+  geom_point(data = non_significant_deletions, 
+             aes(x = deletions, y = log2), color = "darkred", alpha = 0.9)
+
+path_to_file <- file.path(root, "images", "non_significant_expression_gstf.png")
+png(file = path_to_file, res = 100)
+final_plot
+dev.off()
+final_plot
+```

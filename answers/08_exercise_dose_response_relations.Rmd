@@ -1,0 +1,583 @@
+---
+title: "Exercise - Dose-Response Relations"
+author: "Marc A.T. Teunis"
+date: '`r Sys.Date()`'
+output:
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, error = FALSE, results = 'hide', fig.show = 'hide')
+```
+
+```{r, root_1, echo = TRUE}
+## defines the root of the project for later use
+require("rprojroot") || utils::install.packages("rprojroot")
+library(rprojroot)
+root <- find_root_file(criterion = is_rstudio_project)
+```
+
+```{r, packages}
+library(tidyverse)
+library(drc)
+# ??drc
+```
+
+__Write an Rmd file, containing code chunks (if applicable) and answer all the questions below. Store the file in a folder called: "./answers_exercises" in your course project folder. Give this file the same name as the title of the current Rmd file__
+
+## Dose response relations
+Dose response relations are a much modelled experimental paradigm in Life Sciences. In drug discovery, safety evaluation of chemicals, drugs and food, in fundamental approaches like cell culture and tissue culture and also in animal research, this is a see much used experimental design. Usually, the design is chosen where an effector (for example a carcinogenic drug) is used to expose a biological response model (in this case e.g. a live rat or a cultured cell) 
+
+## The exercise
+This exercise will get you acquainted with the `drc` package in R and you will have to apply this package to an example (real-life) dataset.
+
+## The {drc} package  
+The `drc` package has been developed and is maintained by Ritz & Strebig and has been published in PLOS-One and the Journal of Statitical Software (see folder `./data/supporting`)
+
+## The Data
+Two different datasets from two publications are used for this exercise and were selected from a study of Allijn et al., 2016 and from Teunis et., 2013 
+
+The data can ben found as two seprate files in the folder `./data`:
+
+ 1) Allijn et al., 2016 -> `./data/allijn.csv`
+ 2) Teunis et., 2013 -> `./data/NCTC data all participants.xlsx`
+
+## Exercise 1: Allijn et al., 2016 
+
+1A Read the data into R, use the package `readr` to do this.
+
+**ANSWER**
+```{r, eval = FALSE}
+#install.packages("devtools")
+#library(devtools)
+#install_github("bkutlu/pzfxparser")
+
+
+path_to_allijn <- file.path(root, "data", "allijn.txt")
+allijn <- read_delim(file = path_to_allijn, delim = ";")
+
+
+
+
+```
+
+
+1B Inspect the data and create a tidy dataset from the original data:
+ 
+ - Describe the variables
+ - Are there factors that need to be transformed?
+ - Do the factor levels match? 
+ - Is the coding consistent?
+ - Do you need to `gather()` or `spread()`?
+
+**ANSWER** 
+```{r}
+
+```
+
+1C Normalize the data for the respective controls of each `substance` in the dataset
+
+
+
+1D Create a series of dose response plots. Create aplot for each`substance` and for each `effect`
+ 
+ 
+## Exercise 2: Teunis et al., 2013 
+
+The data path: 
+`file.path(root, "data", "NCTC compounds corrected 20121013_decoded.csv")`
+
+2A Read the data into R, use the package `readxl` to do this.
+
+The datafile consists of multiple worksheets. Inpect the data manually by opening the data in Excel. Load the sheet names "Compound NCTC". This worksheet contains collected data from all the experiments. Remove the first two rows of the datatable after parsing of the Excel file
+
+**TIPS** 
+
+ - Inspect the csv, do you need to set the `na = c()` parameter in the `read_csv()` function to something other than the default?
+
+**ANSWER**
+```{r}
+path_to_teunis <- file.path(root, "data", "NCTC compounds corrected 20121013_decoded.csv")
+teunis <- readr::read_delim(file = path_to_teunis, delim = ";")
+teunis
+```
+
+### Variables
+The variables that need te be selected in this dataset:
+
+`r names(teunis)`
+
+ - `Lab` = the lab the compound was tested in
+ - `Chemical` = the name of the compound
+ - `Category` = the chemical class that is known for the chemical
+ - `Exp` = experimental replicate (between experiments)
+ - `Conc.` = the concentration of the compound that was used
+ - `Rep` = replicates (within experiments)
+ - `Viability` = dependent variable: survival of cells based on MTT conversion (% compared to vehicle control)
+ - `IL-18` = dependent variable: The absolute concentration of IL-18 cytokine measured in the medium with ELISA (pg/ml)
+ - `FI` = fold induction of IL-18 cytokine, compared to vehicle control
+
+**TIPS**
+
+ - Use `dplyr::select`
+ - Use `names(df) <- names(df) %>% tolower`
+ - Use `names(df) <- stringr::replace_all(string = names(df),` 
+                                         `pattern = ..., `
+                                         `replacement = ...)`
+ - Try cleaning up the `names` with one pipeline using `%>%`
+ - Rember that you can use `.` as placeholder for the data/vector/table that you put into the pipe
+ - Check for missing values(NA) or infinites values (Inf / NaN) and remove them from the tidy dataset
+
+2B Inspect the data and create a tidy dataset from the original data:
+ 
+ - Are there factor (grouping) variables that need to be transformed?
+ - Do the factor levels match? 
+ - Is the coding consistent?
+ - Do you need to `gather()` or `spread()`?
+ - count NAs and remove them
+
+**ANSWER**  
+```{r}
+names(teunis)
+teunis_tidy <- teunis %>%
+  dplyr::select(-c1, -c2, -valid, -Dunnett, -Compound)
+
+names(teunis_tidy) <- names(teunis_tidy) %>%
+                      
+                      str_replace_all(string = .,            # dot (.) = placeholder for                                                                   # names(teunis_tidy)
+                                      pattern = "\\.",
+                                      replacement = "") %>%
+                      
+                      str_replace_all(string = .,
+                                      pattern = "-",
+                                      replacement = "_") %>%
+  tolower() %>% 
+  print()
+
+sum(is.na(teunis_tidy))
+
+teunis_tidy <- teunis_tidy %>% na.omit()
+teunis_tidy
+
+```
+
+```{r}
+teunis_tidy$lab <- as.factor(teunis_tidy$lab)
+#teunis_tidy$chemical <- as.factor(teunis_tidy$chemical)
+teunis_tidy$exp <- as.factor(teunis_tidy$exp)
+#teunis_tidy$conc <- as.numeric(teunis_tidy$conc)
+#teunis_tidy$viability <- as.numeric(teunis_tidy$viability)
+#teunis_tidy$il_18 <- as.numeric(teunis_tidy$il_18)
+#teunis_tidy$fold <- as.numeric(teunis_tidy$fold)
+
+## convert lab, compound, exp and rep to factors and conc, viability, il_18 and fold  
+teunis_tidy
+```
+
+2C Which chemicals have (on average), a fold-increase in IL-18 induction of > 2.5?
+Which 4 have a fi < 0.7?
+
+**TIPS**
+
+ - Use `dplyr::group_by()`
+ - Summarize the data per compound, first for all replicates within experiments, than for all experiments per compound.
+ - You will need `dplyr::mutate()` to change the type of the dependent vars
+ - You will need `dplyr::summarise()` to create the summary table
+ - Include a variable `overall_mean_fold`, `overall_sd_fold` and `overall_n_fold`
+ - You will need `dplyr::arrange()` to get the highest and lowest 4.
+
+**ANSWER**
+```{r}
+teunis_tidy
+names(teunis_tidy)
+
+teunis_summary <- teunis_tidy %>%
+  group_by(chemical, exp, conc, category) %>%
+#  mutate(viability = as.numeric(viability), # fix type of numeric vars
+#         il_18 = as.numeric(il_18),
+#         fold = as.numeric(fi)) %>%
+  summarise(mean_viability = mean(viability),
+            mean_fi = mean(fi), 
+            mean_il_18 = mean(il_18)) %>%
+  group_by(chemical, conc, category) %>%
+  summarise(overall_mean_fi = mean(mean_fi),
+            overall_sd_fold = sd(mean_fi),
+            overall_mean_viability = mean(mean_viability),
+            overall_mean_il_18 = mean(mean_il_18),
+            overall_n_fi = n()) %>%
+  arrange(desc(overall_mean_fi))
+
+teunis_summary
+
+min(teunis_summary$overall_mean_fi)
+max(teunis_summary$overall_mean_fi)
+
+teunis_summary %>% is.na %>% sum()  
+
+# highest fi:
+highest_fold <- teunis_summary %>%
+  filter(overall_mean_fi > 2.5)
+
+# lowest fi:
+lowest_fold <- teunis_summary %>%
+  filter(overall_mean_fi < 0.7 ) 
+
+highest_fold <- highest_fold$chemical %>% unique()   
+## 4 lowest
+lowest_fold <- lowest_fold$chemical %>% unique()
+
+highest_fold
+lowest_fold
+
+teunis_summary
+
+```
+How come that there are doubles in both low and high induction?
+
+2D Create a subset of the `teunis_summary` data on the basis of the 8 chemicals selected above `teunis_subset`
+
+**TIPS**
+
+ - Use `dplyr::filter()`
+
+**ANSWER**
+```{r}
+teunis_subset_summary <- teunis_summary %>%
+  filter(chemical %in% c(highest_fold, lowest_fold))
+
+## check if it went okay:
+levels(droplevels(as.factor(teunis_subset_summary$chemical)))
+
+```
+
+2E Create a dotplot showing the relationship between compound concentration and viability for each of the 8 chemicals in `teunis_subset`. Choose a 4x4 design. Perform a log10 transformation on the concentration (also add 0.1 to each concentration).
+
+**TIPS** 
+
+ - Remember ggplot2 `geom_point()`?
+ - Remember `facet_wrap`?
+
+**ANSWER**
+
+Dot Plot
+```{r}
+
+teunis_subset_summary
+
+teunis_subset_summary %>%
+  arrange(overall_mean_viability) %>%
+  na.omit()
+
+teunis_subset_summary$conc <- as.numeric(teunis_subset_summary$conc)
+
+teunis_subset_summary %>% 
+  arrange(overall_mean_il_18) %>%
+  ggplot(aes(x = log10(conc+0.1), y = overall_mean_viability)) +
+    geom_point() +
+  facet_wrap(~ fct_reorder(chemical, overall_mean_il_18), nrow = 2)
+
+```
+What do you notice from the order?
+
+# The drc package
+
+The drc package can be loaded by `library(drc)`. Find help by typing `?drc`.
+
+For the exercises below you need to create a new dataset (`teunis_drc`) that summarizes the data for each within-experiment replicate. Group the data for `chemical, exp, conc and category`.
+
+**TIPS**
+
+ - Group by compound, exp, category and conc
+ - We add 0.1 to each concnetration and take log10, this will be our 'log10' transformed values (log10(0) = Inf, so we tackle this problem by adding 0.1 to each value)
+ 
+
+```{r}
+names(teunis_tidy)
+teunis_tidy
+
+teunis_drc <- teunis_tidy %>%
+  group_by(chemical, exp, conc, category) %>%
+  summarise(within_mean_viability = mean(viability),
+            within_mean_il_18 = mean(il_18)) %>%
+  mutate(log_10_conc = log10(conc + 0.1))
+
+teunis_drc           
+```
+
+2F Create 2 dose response plots using the `drc` package. Make the plot for chemicals: 
+
+ - `r highest_fold[1]`
+ - `r lowest_fold[1]`
+
+Create these plot for the two chemicals that have the highest fold increase in IL-18. Make these plots for the untransformed concentration and the log10 and plot the concentrations to `viability`.
+
+**TIPS** 
+
+ - use the model: 
+`model <- drm(within_mean_viability ~ conc, data = teunis_drc %>% filter(chemical == chemical_name), fct = LL.4(names = c("Slope", "Lower Limit", "Upper Limit", "ED50")))` 
+ - Get a model summary by `summary(model)`
+ - plotting is done by entering 
+`plot(model, main = "title", xlab = "x-axis variable (units)", ylab = "y-axis variable (units)")`
+
+
+**ANSWER**
+Chemical 1 - Viability
+```{r, echo=TRUE}
+library(drc)
+names(teunis_drc)
+
+# untransformed
+plot(within_mean_il_18 ~ conc, data = teunis_drc %>% filter(chemical == highest_fold[1]), main= highest_fold[1])
+
+# log10 transformed
+plot(within_mean_il_18 ~ log_10_conc, data = teunis_drc %>% filter(chemical == highest_fold[1]), main= highest_fold[1])
+```
+
+
+# Create the drm() model below 
+
+```{r}
+m1_1 <- drm(within_mean_viability ~ conc, 
+             data = teunis_drc %>% filter(chemical == highest_fold[1]), 
+             fct = LL.4(names = c("Slope", "Lower Limit", "Upper Limit", "ED50")))
+# model summary
+summary(m1_1)
+
+# model plot dose ~ response
+plot(m1_1, type = "all", main = highest_fold[1])
+```
+
+Compound 2 - Viability
+```{r}
+library(drc)
+
+# untransformed
+plot(within_mean_viability ~ conc, data = teunis_drc %>% filter(chemical == highest_fold[2]), main= highest_fold[2])
+
+# log10 transformed
+plot(within_mean_viability ~ log_10_conc, data = teunis_drc %>% filter(chemical == highest_fold[2]), main= highest_fold[2])
+
+# create the drm() model
+m1_2 <- drm(within_mean_viability ~ conc, 
+             data = teunis_drc %>% filter(chemical == highest_fold[2]), 
+             fct = LL.4(names = c("Slope", "Lower Limit", "Upper Limit", "ED50")))
+summary(m1_2)
+
+plot(m1_2, type = "all", main = highest_fold[2])
+```
+
+## drc to ggplot2 transformation
+Untill now we have tried to create all plots with the ggplot2 package. The default plot that are created by the drc package are howver programmed using base-R plotting system. Below you will find a demo how to create drc model plots using 
+
+
+Compound 2 - Viability - ggplot2
+see https://stackoverflow.com/questions/38169765/drc-drc-plot-with-ggplot2
+
+2G How to convert default plots from drc to ggplot format
+
+To extract information from the `drc::drm()` model that is suitable to plot in ggplot we need to use a special self-written function. This function can be loaded by executing the command below:
+
+```{r, echo=TRUE}
+source(file.path(root, "code", "plotdrc_to_ggplot2.R"))
+```
+
+Below is an example of how to use the function `plotdrc_to_ggpot2()`
+```{r, echo=TRUE}
+
+## build example model from the NCTC (teunis) data
+model = drm(within_mean_viability ~ conc, 
+             data = teunis_drc %>% filter(chemical == highest_fold[1]), 
+             fct = LL.4(names = c("Slope", "Lower Limit", "Upper Limit", "ED50")))
+xlab = "Concentration"
+ylab = "Viability"
+ylim = c(30, 150)
+xlim = c(0.1, 1000)
+
+max(teunis_drc$conc)
+min(teunis_drc$conc)
+
+# apply function "plotdrc_to_ggpot2()":
+
+## default drc plot
+drc_plot <- plot(model)
+
+# ggplot2 plot from drc model
+ggplot2_plot <- plotdrc_to_ggplot2(x = model, 
+                                   ylim = ylim, 
+                                   xlim = xlim, 
+                                   ylab = ylab, 
+                                   xlab = xlab)
+
+ggplot2_plot
+
+## plots in a panel to compare
+library(gridBase)
+library(grid)
+vp.BottomRight <- viewport(height=unit(0.5, "npc"), width=unit(0.5, "npc"), 
+                           just=c("left","top"), 
+                           y=1, x=0.5)
+
+
+# plot your base graphics 
+par(mfrow=c(2,2))
+plot(model)
+
+# plot the ggplot using the print command
+print(ggplot2_plot, vp=vp.BottomRight)
+
+```
+
+
+2H Create a function (`create_dose_response()`) that models a drc model for each chemical in the `teunis_drc`.
+
+**TIPS**
+
+ - Use the following below model for the function
+ - Create a subset for the data containing the chemical `r highest_fold[4]` and test you function on this subset.
+ - Add the function `ggsave()` to your function. This will save the plot to an image. Use the chemical name in the filename. 
+ - Remember `paste()` and `paste0()`
+ - Provide a plot title (chemical name)
+ 
+```
+create_dose_response <- function(df, dose, effect){
+
+
+}
+```
+
+```{r}
+## split teunis_drc by chemical
+split_teunis_drc <- split(teunis_drc, teunis_drc$chemical, drop = TRUE)
+df  = split_teunis_drc[[12]]
+
+## test arguments
+dose = "conc" 
+effect = "within_mean_viability"
+xlim = xlim 
+ylim = ylim 
+xlab = xlab
+ylab = ylab
+path = file.path(root, "images", "drc_plots")
+
+
+## define function
+create_dose_response <- function(df, dose, effect,
+                                 xlim, ylim, xlab, ylab, path){
+
+  ## source function to convert base plot to ggplot2
+  source(file.path(root, "code", "plotdrc_to_ggplot2.R"))
+  
+  
+  ## drc model definition  
+  model <- drm(unlist(df[,effect]) ~ unlist(df[, dose]), 
+             data = df, 
+             fct = LL.4(names = c("Slope", "Lower Limit", "Upper Limit", "ED50")))
+  
+  chemical <- df$chemical[1] %>% as.character()
+  
+  
+  ## correcting some unhealthy namegiving in the chemicals
+  chemical <- stringr::str_replace_all(chemical, pattern = " ", replacement = "_")
+  chemical <- stringr::str_replace_all(chemical, pattern = "\\(", replacement = "")
+  chemical <- stringr::str_replace_all(chemical, pattern = "\\)", replacement = "")
+  chemical <- stringr::str_replace_all(chemical, pattern = "\\%", replacement = "")
+  chemical <- stringr::str_replace_all(chemical, pattern = "__", replacement = "_")
+  
+  ## where to store the plot
+  dir.create(path)  
+  plot_file_name <- file.path(path, paste0(chemical, ".png"))
+  
+  ## define plot title
+  plot_title <- chemical
+  
+  ## creating the plot in ggplot syntaxis
+  gg_plot <- plotdrc_to_ggplot2(x = model, 
+                                   ylim = ylim, 
+                                   xlim = xlim, 
+                                   ylab = ylab, 
+                                   xlab = xlab,
+                                plot_title = plot_title)
+  # save plot to dir
+  ggsave(filename = plot_file_name) 
+  
+  # get model summary
+  summary_model <- summary(model)
+
+  # put plot and summary in list
+  results <- list(gg_plot, summary_model)
+  return(results)
+  
+  }
+
+
+## df = teunis_drc %>% filter(chemical == highest_fold[4])
+## names(data)
+
+
+
+test <- create_dose_response(df = df, dose = "conc", effect = "within_mean_viability", 
+                     xlim = xlim, ylim = ylim, 
+                     xlab = xlab, ylab = ylab, path = path)
+
+test[[1]]
+test[[2]]
+```
+
+2I Create a ggplot2 plot for each chemical present in the `teunis_drc` dataset, save each image to disk. Use a descriptive name for each file.
+
+**TIPS**
+
+ - Use the drc_to_ggplot2, and the `create_dose_response()` function you wrote above
+ - Split the datset for each chemical using the `split()` command, remember that you need to set `drop = TRUE` in the `split()` call.
+ - Use the `map()` function from the purrr package or `lapply()` from base R to loop over the split dataset-list
+
+```{r}
+## creating a safe version of create_dose_response() with purrr::safely
+safe_create_dose_response <- purrr::safely(create_dose_response)
+
+## test function on first element
+safe_create_dose_response(split_teunis_drc[[1]],
+          dose = "conc", effect = "within_mean_viability", 
+                     xlim = c(0.1, 1000) , ylim = c(20, 120), 
+                     xlab = xlab, ylab = ylab, path = path)
+
+## apply function to split
+plot_list <- lapply(split_teunis_drc, safe_create_dose_response,
+          dose = "conc", effect = "within_mean_viability", 
+                     xlim = c(0.1, 1000) , ylim = c(20, 160), 
+                     xlab = xlab, ylab = ylab, path = path)
+
+## check for errors
+plot_list_transposed <- purrr::transpose(plot_list)
+plot_list_transposed[[1]]
+plot_list_transposed$result
+plot_list_transposed$error
+
+levels(as.factor(teunis_drc$chemical))
+
+```
+
+2H Now use the same backbone-function to create a series of figures, using the same statistical dose ~ response model, but now for the absolute IL-18 induction for each chemical
+```{r}
+names(teunis_drc)
+
+min(teunis_drc$within_mean_il_18)
+max(teunis_drc$within_mean_il_18)
+
+path <- file.path(root, "images", "drc_il18")
+
+
+plot_list_il18 <- lapply(split_teunis_drc, safe_create_dose_response,
+          dose = "conc", effect = "within_mean_il_18", 
+                     xlim = c(0.1, 1000), ylim = c(-25, 260), 
+                     xlab = xlab, ylab = "mean IL-18", path = path)
+
+plot_list_transposed_il18 <- purrr::transpose(plot_list)
+plot_list_transposed_il18[[1]]
+plot_list_transposed_il18$result
+plot_list_transposed_il18$error
+
+```
+
+
+

@@ -1,0 +1,74 @@
+---
+title: "Relative paths - {here}"
+author: "Marc A.T. Teunis"
+date: "4/1/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      error = FALSE,
+                      results = 'hide',
+                      fig.show = 'hide')
+```
+
+## Exercise
+__Write an Rmd file, containing code chunks (if applicable) and answer all the questions below. Store the file in a folder called: "./answers_exercises" in your course project folder. Give this file the same name as the title of the current Rmd file. Store the file in your sandbox folder.__
+
+## Packages
+```{r, echo=TRUE}
+library(tidyverse)
+```
+
+## Project root
+
+In most of the Rmd files used during the course, you will find this code:
+
+```{r, root_1, echo=TRUE}
+## defines the root of the project for later use
+require("rprojroot") || utils::install.packages("rprojroot")
+library(rprojroot)
+root <- find_root_file(criterion = is_rstudio_project)
+```
+
+This will find the root of the project, even when the Rmd file is nested somewhere deep in you project. The Rmd file creates it's own environment, therefore it will not work if you use absolute paths in an Rmd file. The file will not render properly. 
+
+## The `{here}` package generates a stable and more general solution to acces files through relative paths.
+
+## **EXERCISE 1**
+
+A) Go over the help for the `{here}` package
+```{r}
+library(here)
+?here
+```
+
+B) Load the file "data/messy/TB_burden_countries_2016-12-08_messy.csv" into your R session, using an aboslute path.
+```{r, eval=FALSE}
+tb_data <- read_csv("data/messy/TB_burden_countries_2016-12-08_messy.csv")
+```
+
+C) Now load the same datafile as in B), but now use the `root` object from the `root_1` code chunk above. Try constructing a file path to the file using the `root` object together with the `file.path()` function.
+```{r}
+tb_data2 <- read_csv(file.path(root, 
+                               "data", 
+                               "messy",
+                               "TB_burden_countries_2016-12-08_messy.csv"))
+```
+
+D) Now load the same file, using the `here()` function from the `{here}` package. 
+```{r}
+tb_data3 <- read_csv(here("data/messy/TB_burden_countries_2016-12-08_messy.csv"))
+```
+
+E) Compare the solutions from B - D, which one is most compact?
+
+D) Try knitting you Rmd file with answers to the questions above. If you do no adapt any knitr code chunk options this will fail, why? Try make adaptations to the chunk options to knit the file.
+
+
+
+
+
+

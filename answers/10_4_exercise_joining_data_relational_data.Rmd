@@ -1,0 +1,285 @@
+---
+title: "Joining Data, Relational Data - Exercise"
+author: "Marc A.T. Teunis"
+date: '`r Sys.Date()`'
+output: 
+   BiocStyle::html_document:
+    toc: true
+    toc_depth: 2
+---
+
+```{r, root_1, include=FALSE}
+## defines the root of the project for later use
+require("rprojroot") || utils::install.packages("rprojroot")
+library(rprojroot)
+root <- find_root_file(criterion = is_rstudio_project)
+```
+
+```{r, knitr_setup, warning=FALSE, error=FALSE, message=FALSE, include=FALSE}
+## setting knitr options
+if (!require("knitr")) utils::install.packages("knitr")
+library(knitr)
+
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, error = FALSE, message = FALSE, fig.width = 3, fig.height = 3, fig.show = 'hide', results = 'hide')
+knitr::opts_knit$set(root.dir = root)
+```
+
+# End product
+
+**Generate a new RMarkdown file containing the answers to all questions below and render it to HTML. *Upload your _Rmd AND HTML_ file to CANVAS under the corresponding (see file name) exercise number** 
+
+*Not applicable to post-HBO course
+
+# Prerequisites
+
+ - Go over the tidy data chapter and the chapter on relational data in `R for Data Science` from Grolemund & Wickham
+ - Pay special attention to how you `gather()` data into a tidy format
+ - Pay special attention to the `{dplyr}` `_join()` family of functions
+
+# Packages
+```{r, echo=TRUE}
+library(tidyverse)
+library(gapminder)
+```
+
+# Data
+For this exercise we will use the influenza (`"/data/flu_data.csv"`), the dengue (`"dengue_data.csv"`) and the gapminder datasets (`"gapminder::gapminder"`).
+
+The dengue and flu datasets contain internet 'activity' measures for both diseases collected by Google Analytics over a certain period of time. The activity measures are an arbitrary measure for how much search activity there is on the internet, for any given week, for any given country. It was an attempt from Google to build a prediction model to be able to forecast outbreaks end development of an uncoming epidemic of flu and/or dengue fever. The did not yet succeed in this purpose however. We will use these two datsets and the gapminder dataset that we have seen in UNIT 1 for illustration of a principle that is much used in building databases: relational data.
+
+**TIPS**
+
+ - Use the `data()` function to load the `gapminder` dataset from the `{gapminder}` package
+ - The information about the datasets and variables can be found here:
+
+flu/dengue: 
+
+https://www.google.com/publicdata/explore?ds=z3bsqef7ki44ac_
+
+https://www.google.org/flutrends/about/
+
+gapminder: 
+
+https://cran.r-project.org/web/packages/gapminder/README.html
+
+```{r}
+## flu data
+flu <- read_csv(file.path(root, "data", "flu_data.csv"), skip = 10)
+## dengue data
+dengue <- read_csv(file = file.path(root, "data", "dengue_data.csv"), skip = 10)
+## gapminder data
+data(gapminder,package = "gapminder")
+
+```
+
+# Question 1; Tidy data
+
+A) Inspect the three datasets for names of variables, levels of factors etc. Is the data all tidy?
+
+B) Gather the flu and dengue dataset into a tidy format. Make sure you provide a decriptive name for the flu activity and the dengue activtiy in each dataset.
+
+
+```{r}
+names(flu)
+flu_tidy <- flu %>%
+  gather(Argentina:Uruguay, key = "country", value = "flu")
+flu_tidy
+
+names(dengue)
+dengue_tidy <- dengue %>%
+  gather(Argentina:Venezuela, key = "country", value = "dengue")
+
+```
+
+C) Which countries are in the flu dataset?
+```{r}
+flu_countries <- unique(flu_tidy$country)
+```
+
+D) Which countries are in the dengue dataset?
+```{r}
+dengue_countries <- unique(dengue_tidy$country)
+```
+
+E) Which countries are represented in both flu and dengue datasets?
+```{r}
+ind <- flu_countries %in% dengue_countries
+both <- flu_countries[ind]
+```
+
+# Question 2; Joins
+A) Join the flu and dengue tidy datasets so that all data is combined, use `dplyr::full_join()`
+```{r}
+join_full <- dplyr::full_join(dengue_tidy, flu_tidy)
+
+join_full
+```
+
+B) Gather the dengue_cases and flu cases into two columns: `disease` and `cases`
+```{r}
+join_full_tidy <- join_full %>%
+  gather(dengue:flu, key = "disease", value = "activity")
+join_full_tidy
+```
+
+C) plot the trend over time for dengue and flu for each datapoint. Use ggplot2 syntax only. Summarize the date by year by using `lubridate::ceiling_date()`
+
+**TIPS**
+
+ - use `group_by(year, disease)` to group the data for flu and dengue, per year
+ - use factes for `disease`
+ - use `dplyr::mutate()` to create two new variables `year` and `month` on the basis of `Date` with `lubridate::ceiling)date()`
+ - use summarize to calculate the mean activity
+ - remove the legend (see: https://stackoverflow.com/questions/35618260/remove-legend-ggplot-2-2 )
+ 
+```{r}
+## create new variables year and month
+join_full_tidy <- join_full_tidy %>%
+  mutate(year = lubridate::ceiling_date(Date, unit = "year"),
+         month = lubridate::ceiling_date(Date, unit = "month")) 
+
+## create plot
+join_full_tidy %>%
+  group_by(year, disease, country) %>%
+  summarize(mean_activity = mean(activity, na.rm = TRUE)) %>%
+  ggplot(aes(x = year, y = mean_activity)) + 
+    geom_point(aes(colour = country)) +
+    geom_line(aes(group = country, colour = country)) +
+    facet_wrap(~ disease, scales = "free") +
+    theme_bw() +
+    theme(legend.position="none")
+  
+```
+
+D) Plot a point (scatter) graph showing those countries that have flu but not dengue data. Use `dplyr::anti_join()`
+
+**TIPS**
+
+ - Watch out for overplotting, reducing point size can help
+ - Rotating the x-axis labels: see: 
+```{r}
+anti_join(flu_tidy, dengue_tidy) %>%
+  ggplot(aes(x = lubridate::ceiling_date(Date, unit = "month"), y = log10(flu))) +
+  geom_point(size = 0.2) +
+  facet_wrap(~country) +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+```
+
+E) Reciprocally to D, plot a scatter graph that shows the countries that have dengue but not flu.
+```{r}
+anti_join(dengue_tidy, flu_tidy) %>%
+  ggplot(aes(x = lubridate::ceiling_date(Date, unit = "month"), y = log10(dengue))) +
+  geom_point(size = 0.2) +
+  facet_wrap(~country)
+```
+
+# Question 3; Data reduction
+Let's look if we can find a relationship between dengue cases and flu cases
+
+A) Filter the data for only those countries that reported flu and dengue cases (see [Question 1; Tidy data](#question-1;-tidydata))
+
+**TIPS**
+
+ - use the `%in%` operator within you call to `dplyr::filter()`
+
+```{r}
+join_full_tidy_filtered <- join_full_tidy %>%
+  dplyr::filter(country %in% both)
+
+```
+
+B) Make a new plot only for the filtered dat that contains only the countries where there is data for flu and dengue (see 3A). Plot the activity per month (`lubridate::ceiling()`). This time show a plot with a legend.
+
+```{r}
+join_full_tidy_filtered %>%
+  mutate(year = lubridate::ceiling_date(Date, unit = "month")) %>%
+  group_by(year, disease, country) %>%
+  summarize(mean_activity = mean(activity, na.rm = TRUE)) %>%
+  ggplot(aes(x = year, y = mean_activity)) + 
+    geom_point(aes(colour = country)) +
+    geom_line(aes(group = country, colour = country)) +
+    facet_wrap(~ disease, scales = "free") +
+    theme_bw() 
+#+
+ #   theme(legend.position="none")
+
+```
+
+C) If you have not done already, try fixing the large difference in values of mean activity in the plot (maybe take a log 10?)
+
+```{r}
+join_full_tidy_filtered %>%
+  mutate(year = lubridate::ceiling_date(Date, unit = "month")) %>%
+  group_by(year, disease, country) %>%
+  summarize(mean_activity = mean(activity, na.rm = TRUE)) %>%
+  ggplot(aes(x = year, y = log10(mean_activity))) + 
+    geom_point(aes(colour = country)) +
+    geom_line(aes(group = country, colour = country)) +
+    facet_wrap(~ disease, scales = "free") +
+    theme_bw() 
+#+
+ #   theme(legend.position="none")
+
+```
+
+D) If all went well you will see clear seasonal patterns in both flu and dengue internet search activity, can you think of a few reasons why this is? Also one country has high activity on the Web for both desisease, which country is this? 
+
+# Question 4; Relations of variables
+
+A) In the next part you will need to do some transofrmations on the variables of the gapminder dataset. In order to join the gapminder data with the flu/dengue data, it is important that we filter the gapminder data for only those years that are also represented in the flu/dengue data. Furthermore, we need to adjust the type of variables to match before we join the data. We will do the transformations in a few steps: 
+
+ 1. Convert the `year` variable in the flu/dengue tidy dataset to a numeric value, containing only the year.
+ 2. Select the `year`, `country`, `disease`, and `activity` variables from the flu/dungeu tidy datasets
+```{r}
+join_full_tidy <- join_full_tidy %>%
+  mutate(year = lubridate::year(year)) %>%
+  print()
+
+join_full_tidy <- join_full_tidy %>%
+  select(country, disease, activity, year)
+
+```
+ 3. From the `gapminder` dataset, select only the `country`, `year` and `gdpPercap` variables. 
+ 4. Filter the years `r unique(join_full_tidy$year)` in the gapminder data
+
+```{r}
+names(gapminder)
+unique(gapminder$year)
+years_filter <- unique(join_full_tidy$year)
+
+gapminder_selected <- gapminder %>%
+  select(year, gdpPercap, country) %>%
+  dplyr::filter(year %in% years_filter) %>%
+  print()
+
+```
+
+B) Join the full flu/dengue dataset from (2B) with the filtered gapminder dataset, make sure you use a `left_join()` to join the flu/dengue set with the gapminder set and remove the NAs. 
+
+```{r}
+gap_flu_dengue <- left_join(join_full_tidy, gapminder_selected) %>% na.omit() 
+gap_flu_dengue
+```
+
+
+C) generate a plot that show the relationship between disease search activity and Gross demostic product, for both flu and dengue
+
+**TIPS**
+
+ - use a `facet_grid(year ~ disease)` to seprate effects of GDPperCap on activity per year and disease type
+ - use `y = log10(actvity)`
+ - summarize the data for the country, disease and year variables
+
+```{r}
+gap_flu_dengue %>%
+  na.omit() %>%
+  group_by(country, disease, year) %>%
+  summarise(mean_activity = mean(activity),
+            mean_gdp = mean(gdpPercap)) %>%
+  ggplot(aes(x = mean_gdp, y = log10(mean_activity))) +
+  geom_point(aes(colour = country)) +
+  facet_wrap(~ disease)
+
+#ggsave
+
+```

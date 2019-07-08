@@ -1,0 +1,283 @@
+---
+title: "Exercise - List columns & Iterations"
+author: "Marc A.T. Teunis"
+date: '`r Sys.Date()`'
+output: 
+   BiocStyle::html_document:
+    toc: true
+    toc_depth: 2
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      error = FALSE,
+                      results = 'hide',
+                      fig.show = 'hide')
+``` 
+
+# Use relative paths
+```{r, eval=TRUE, results='markup', echo=TRUE}
+if (!require("rprojroot")) install.packages("rprojroot")
+library("rprojroot")
+root <- find_root_file(criterion = is_rstudio_project)
+root
+```
+
+# End product
+
+**Generate a new RMarkdown file containing the answers to all questions below and render it to HTML. Upload your _Rmd AND HTML_ file to CANVAS under the corresponding (see file name) exercise number** 
+
+# Packages
+```{r, results='markup', echo=TRUE}
+library(tidyverse)
+library(broom)
+library(modelr)
+```
+
+# Prerequisites
+
+ - Intro base R
+ - Data wrangling
+ - Visualizations
+ - Writing functions
+ - Loops 
+ - Pipes (`%>%`)
+ 
+# Data
+For this exercise we will use the Calux dataset. The file containing the data is:
+"./data/case_1_calux/zonmw_calux_all_data.csv"
+
+# Question 1
+
+A) Load the data in variable and into your R Session. Remember to check the seperator of this file. Do you know how to do this in the `Linux Terminal`?
+
+```{bash, eval = FALSE, include = TRUE}
+## first four lines of the file in the Terminal
+cd data/case_1_calux
+head -4 zonmw_calux_all_data.csv
+```
+
+```{r}
+calux <- read_csv2(file.path(root,
+                            "data",
+                            "case_1_calux",
+                            "zonmw_calux_all_data.csv"))
+```
+
+# Variables in the data 
+
+`r calux[,1] %>% unique()` = A grouping variable indicating two studies. In one study the chemicals were non-coded (pilot study). In another study the chemicals were coded (prevalidation study).
+
+`r calux[, 2] %>% unique()` = A grouping variable, indicating the name of the participating laboratory 
+
+`r calux[, 3] %>% unique()` = A grouping variable, indicating the chemical class of the chemical 
+
+`r calux[, 4] %>% unique()` = A character, indicating the generic name of the chemical
+
+`r calux[, 5] %>% unique()` = An integer indicating the chemical number in the study
+
+`r calux[, 6] %>% unique()` = A double / numeric value for induced fluorence of cell reporter for P53 induction
+
+`r calux[, 7] %>% unique()` = A double / numeric value for cytotoxicity (ratio compared to vehicle control)
+
+`r calux[, 8] %>% unique()` = A grouping variable indicating whether S9 liver microsome homogenate was added (1) or not (0)
+
+B) Explore the data
+
+ - Check the variable types, using a call to `map()` from the `{purrr}` package
+ - Check the number of NAs
+
+```{r}
+calux
+map(calux, typeof) 
+
+```
+ 
+ C) Clean the data
+ 
+ - Clean up the names of the variables (no special characters and spaces, no capitals, snake-case)
+ 
+```{r}
+names(calux) <- str_replace_all(names(calux),
+                              pattern = "\\.",
+                              replacement = "_")
+
+names(calux) <- names(calux) %>% tolower()
+
+names(calux) <- str_replace_all(names(calux),
+                              pattern = " ",
+                              replacement = "_")
+
+
+names(calux)
+```
+
+ D) Change grouping variables to factors. Write a function (named: `change_to_factor()`) that does the following:
+ 
+ - Input: A dataframe or tibble (`df`) 
+ - Input: A character (`colum_names`)
+ - Output, the column/columns indicated by the `column_names` of the dataframe is/are converted to a factor, the function returns a tibble.
+ - Use the existing function `forcats::as_factor()`
+
+Test your function with one column of `calux` to see if it works 
+ The function needs to have two parameters as input: a tibble/data.frame called `df` and `colum_names`.
+
+```{r}
+### NEEDS WORK ###
+#' @title A function that convert a column of a dataframe to a factor
+#' @param df An object of class tibble and/or data.frame
+#' @param column_names A vector of class character or integer that points to a column name of position
+
+df = calux
+column_names = "study"
+
+
+  change_to_factor <- function(df, column_names){
+  
+ # x <- as.name(column_name)
+  df[column_names] <- lapply(df[column_names] , as_factor)
+  df
+  return(df)
+}
+
+## test
+calux <- change_to_factor(df = calux, column_names = "study")
+calux <- change_to_factor(df = calux, column_names = 2)
+
+calux
+```
+
+ E) Annotate your function code chunk with `roxygen comments`. See: https://cran.r-project.org/web/packages/roxygen2/vignettes/rd.html 
+ 
+ - Include the following roxygen parameters
+ `@title` A short title of your function that explains what it does
+ `@param` For each input, indicate what the name is of the input paramter and of what data-type it needs to be.
+ `@param` 
+ 
+ F) Use a call to `purrr::map()` and your own written function to convert the variables `study`, `laboratory`, `class` and `s9_mix` to factors 
+```{r}
+variables_factors <- listc("study",
+                       "laboratory",
+                       "class",
+                       "s9_mix")
+
+calux$
+
+calux <- map(variables_factors, change_to_factor, df = calux)
+calux
+```
+
+# Question 2; Exploratory Data Analysis 
+
+A) Create meaningful graph of the calux data, try using at least three grouping variables and one nummeric dependent variable (`p53_ifmax` or `p53_cyto_mec`). Filter the data for the chemicals:
+
+**TIPS**
+
+- Use `group_by`
+- Use `summarize`
+- Use `ggplot`
+- Usse `colour = ...`
+
+
+```{r}
+
+#' Rotate the x of y axis labelds of a ggplot graph
+#' 
+#' @export
+
+
+rotate_axis_labels <- function(axis, angle, hjust) {
+  
+  if(axis == "x" | axis == "X"){
+    theme <- theme(axis.text.x = element_text(angle = angle, hjust = hjust))
+  }
+  
+  if(axis == "y" | axis == "y"){
+    theme <- theme(axis.text.y = element_text(angle = angle, hjust = hjust))
+  }
+  return(theme)
+}
+
+rotation_x <- rotate_axis_labels(axis = "x", angle = 90, hjust = 1)
+
+calux
+names(calux)
+calux %>%
+  na.omit() %>%
+  group_by(laboratory, name, class, s9_mix) %>%
+  summarise(mean_if_max = mean(as.numeric(p53_ifmax))) %>%
+  ggplot(aes(x = name, y = log10(mean_if_max), colour = as_factor(s9_mix))) +
+  geom_point() +
+  facet_wrap(~ laboratory) +
+  rotation_x
+  
+  
+
+```
+
+# Qestion 3; list columns
+
+A) Generate a nested list-column, group the data by `name` (chemical). Use the `nest()` function from the `{tidyr}` package
+
+```{r}
+nested <- calux %>%
+  group_by(name) %>%
+  nest()
+
+nested$data[[1]]
+```
+
+B) To keep things together, name the nested list-column according the chemical names, using a call to `mutate()`
+
+```{r}
+names(nested$data) <- calux$name %>% unique()
+
+nested$data[1]
+
+```
+
+C) Write a function that takes one element of the nested list-column as input and provides a bar plot showing the relationship between the mean p53_cyto_mec, for each lab, with or without s9 mix.
+
+```{r}
+
+## dummy 
+
+df <- nested$data[[1]]
+
+create_graph <- function(df){
+
+    df %>%
+    na.omit() %>%
+    group_by(laboratory, s9_mix) %>%
+    summarise(mean_ifmax = mean(as.numeric(p53_ifmax))) %>%
+    ggplot(aes(x = laboratory, y = mean_ifmax )) +
+    geom_col(aes(fill = as_factor(s9_mix)), position = 'dodge') 
+  
+  
+  
+} 
+
+create_graph(df = df)
+
+```
+
+D) Add a new list-column to the existing nested dataframe, holding a graph for each chemical. Use map() and mutate() to achieve this.
+
+
+```{r}
+nested <- nested %>%
+  mutate(graphs_bars = map(data, create_graph))
+
+nested
+nested$graphs_bars[[55]]
+```
+
+
+
+
+
+
+
+
