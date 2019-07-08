@@ -1,0 +1,56 @@
+---
+title: "Data Management - Demo"
+author: "Marc Teunis"
+date: "`r Sys.Date()`"
+output:
+  ioslides_presentation: 
+    highlight: pygments
+    widescreen: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Files
+
+ - When doing data analysis you will gather A LOT OF FILES.
+ - Having no system will cause you time and will lead to loss of data and information
+
+## File names
+ 
+ - Use "Linux" style file names: "snake_case.txt"
+ 
+## A few simple rules
+
+ - Space is cheap, confusion is expensive
+ - Do everything via code
+ - Write code that runs from begin to end
+ - Never change 'raw'-data or filename
+ - Set guidelines with the group and stick to them
+ 
+  __after Edna Ridge - "Guerilla Analytics"__
+
+## Project structure
+
+Use a flat folder structure
+
+```{r}
+fs::dir_tree(here::here("participant_cases"))
+```
+
+
+
+
+## Naming Conventions
+
+ - I use `snake_case` for variables, function names and file names
+ - `camelCase` is also used
+ - `dot.case` is not modern 
+ - DO NOT rename files (raw-data & course files)
+ 
+ 
+## Recieving Data
+
+
+ 

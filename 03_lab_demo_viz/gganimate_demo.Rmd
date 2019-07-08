@@ -1,0 +1,21 @@
+---
+title: "Demo {gganimate}"
+author: "Marc A.T. Teunis"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, error = FALSE, warning = FALSE)
+```
+
+## The original gapminder animation
+https://www.gapminder.org/tools/?from=world#$chart-type=bubbles
+
+## An R implementation of the gapminder animation 
+The code below uses the `{gganimate}` package
+```{r}
+source(here::here("code", "08_gganimate_demo.R"))
+gapminder_animation
+```
+

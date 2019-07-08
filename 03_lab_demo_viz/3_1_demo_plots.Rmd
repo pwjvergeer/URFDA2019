@@ -1,0 +1,358 @@
+---
+title: "Several R plot examples"
+author: "Marc A.T. Teunis"
+date: "`r Sys.Date()`"
+output:
+  ioslides_presentation: 
+    highlight: pygments
+    widescreen: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      error = FALSE,
+                      message = FALSE)
+
+```
+
+## R packages
+```{r, echo=TRUE}
+## CRAN
+library(stats)
+library(circlize) 
+library(pheatmap)
+library(ggplot2)
+library(drc)
+library(tidyverse)
+
+## Bionconductor
+## Example: BiocManager::install('DESeq2')
+library(DESeq2)
+library(GEOquery)
+library(tximport)
+library(tximportData)
+library(pasilla)
+library(ReactomePA)
+# biocLite("vsn")
+#install.packages("ashr")
+```
+
+## Circos plot
+```{r}
+source(here::here("code", "circos_example.R"))
+```
+
+## Heatmaps
+```{r}
+library(gplots)
+library(geneplotter)
+
+# Mol Biol Cell. 1998 Dec;9(12):3273-97.
+# Comprehensive identification of cell cycle-regulated genes of the yeast
+# Saccharomyces cerevisiae by microarray hybridization.
+# Spellman PT, Sherlock G, Zhang MQ, Iyer VR, Anders K, Eisen MB, Brown PO, Botstein D, Futcher B.
+# Department of Genetics, Stanford University Medical Center, Stanford, California 94306-5120, USA.
+#
+# We sought to create a comprehensive catalog of yeast genes whose transcript levels vary
+# periodically within the cell cycle. To this end, we used DNA microarrays and samples from
+# yeast cultures synchronized by three independent methods: alpha factor arrest, elutriation,
+# and arrest of a cdc15 temperature-sensitive mutant. Using periodicity and correlation algorithms,
+# we identified 800 genes that meet an objective minimum criterion for cell cycle regulation.
+# In separate experiments, designed to examine the effects of inducing either the G1 cyclin
+# Cln3p or the B-type cyclin Clb2p, we found that the mRNA levels of more than half of these
+# 800 genes respond to one or both of these cyclins. Furthermore, we analyzed our set of cell
+# cycle-regulated genes for known and new promoter elements and show that several known elements
+# (or variations thereof) contain information predictive of cell cycle regulation. A full
+# description and complete data sets are available at http://cellcycle-www.stanford.edu
+
+# read the data in from URL
+bots <- read.table(url("http://genome-www.stanford.edu/cellcycle/data/rawdata/combined.txt"), sep="\t", header=TRUE)
+
+# get just the alpha data
+abot <- bots[,c(8:25)]
+rownames(abot) <- bots[,1]
+abot[1:7,] %>% as_tibble()
+
+# get rid of NAs
+abot[is.na(abot)] <- 0
+
+# we need to find a way of reducing the data. Can't do ANOVA as there are no
+# replicates. Sort on max difference and take first 1000
+min <-apply(abot, 1, min)
+max <- apply(abot, 1, max)
+sabot <- abot[order(max - min, decreasing=TRUE),][1:1000,]
+
+# cluster on correlation
+cdist <- as.dist(1 - cor(t(sabot)))
+hc <- hclust(cdist, "average")
+```
+
+## Draw a heatmap
+```{r}
+# x11()
+heatmap.2(as.matrix(sabot),
+          Rowv=as.dendrogram(hc),
+          Colv=FALSE,
+          cexRow=0.05,
+          cexCol=1,
+          dendrogram="row",
+          scale="row",
+          trace="none",
+          density.info="none",
+          key=FALSE,
+          col=greenred.colors(80))
+```
+
+## Different colours
+```{r}
+# x11()
+heatmap.2(as.matrix(sabot),
+          Rowv=as.dendrogram(hc),
+          Colv=FALSE,
+          cexRow=0.05,
+          cexCol=1,
+          dendrogram="row",
+          scale="row",
+          trace="none",
+          density.info="none",
+          key=FALSE,
+          col=heat.colors(80))
+```
+
+## More control over colours
+```{r}
+# x11()
+
+my_palette <- colorRampPalette(c("blue", "yellow", "darkgreen"))(n = 80)
+
+heatmap.2(as.matrix(sabot),
+          Rowv=as.dendrogram(hc),
+          Colv=FALSE,
+          cexRow=0.05,
+          cexCol=1,
+          dendrogram="row",
+          scale="row",
+          trace="none",
+          density.info="none",
+          key=FALSE,
+          col=my_palette)
+```
+
+## Dose response relations
+```{r, echo=TRUE}
+library(drc)
+ryegrass %>% as_tibble()
+## Fitting models to be plotted below
+ryegrass.m1 <- drm(rootl~conc, data = ryegrass, fct = LL.4())
+ryegrass.m2 <- drm(rootl~conc, data = ryegrass, fct = LL.3())  
+# lower limit fixed at 0
+```
+
+## Plotting observations and fitted curve for the first model
+```{r}
+library(drc)
+plot(ryegrass.m1, broken = TRUE)
+```
+
+## Adding fitted curve for the second model (not much difference)
+```{r}
+plot(ryegrass.m1, broken = TRUE)
+plot(ryegrass.m2, broken = TRUE, add = TRUE, type = "none", col = 2, lty = 2)
+```
+
+## Add confidence region for the first model.
+```{r}
+plot(ryegrass.m1, broken = TRUE)
+plot(ryegrass.m2, broken = TRUE, add = TRUE, type = "none", col = 2, lty = 2)
+plot(ryegrass.m1, broken = TRUE, type="confidence", add=TRUE) 
+```
+
+## Finetuning the axis break
+```{r}
+plot(ryegrass.m1, broken = TRUE, bcontrol = list(style = "gap"))
+```
+
+## Pathway analysis
+```{r}
+library(ReactomePA)
+## try http:// if https:// URLs are not supported
+source("https://bioconductor.org/biocLite.R")
+#biocLite("ReactomePA")
+#biocLite("DOSE")
+#biocLite("org.Hs.eg.db")
+#browseVignettes("ReactomePA")
+
+library(org.Hs.eg.db)
+library(DOSE)
+library(ReactomePA)
+
+## ------------------------------------------------------------------------
+library(ReactomePA)
+data(geneList)
+de <- names(geneList)[abs(geneList) > 1.5]
+head(de)
+x <- enrichPathway(gene=de,pvalueCutoff=0.05, readable=T)
+head(as.data.frame(x))
+```
+
+## Barplot
+```{r, fig.height=6, fig.width=12}
+## ----fig.height=6, fig.width=12------------------------------------------
+
+barplot(x, showCategory=8)
+
+```
+
+## Network with clusters
+```{r}
+## ----fig.height=10, fig.width=10-----------------------------------------
+emapplot(x)
+```
+
+## Cnet network
+```{r}
+## ----fig.height=8, fig.width=8-------------------------------------------
+cnetplot(x, categorySize="pvalue", foldChange=geneList)
+```
+
+## ggplot2
+```{r}
+library(ggplot2)
+library(dplyr)
+library(gapminder)
+library(wesanderson)
+
+gap_07 <- filter(gapminder, year == 2007)
+
+ggplot(gap_07, aes(x = gdpPercap, y = lifeExp,
+                   color = continent)) +
+
+  geom_point(size = 2) +
+  scale_x_log10() +
+  theme_light() +
+  theme(legend.position = c(0.1, 0.85),
+legend.key = element_blank(),
+axis.text = element_text(size = 12),
+axis.title = element_text(size = 14)) +
+  labs(x = "Per capita GDP",
+       y = "Life Expectancy",
+       title = "2007 Life Expectancy and GDP",
+        color = "Continent") +
+  ggsave("life_exp_gdp_2007_cutom.png", 
+width = 7, height = 7)
+```
+
+## Time series
+```{r, echo=FALSE}
+#gapminder %>% names
+gapminder %>% 
+  group_by(continent, year) %>%
+  summarise(total_pop_continent = sum(as.numeric(pop), na.rm = TRUE)) %>%
+  ggplot(aes(x = year,
+             y = total_pop_continent)) +
+  geom_point(aes(colour = continent)) +
+  geom_line(aes(group = continent, colour = continent)) +
+  ylab("Total population per continent") +
+  theme_bw()
+```
+
+
+## Wells plates
+```{r}
+# install.packages("platetools")
+library(platetools)
+library(viridis)
+
+# example dataframe
+df <- data.frame(vals = rnorm(384),
+                 well = num_to_well(1:384, plate = 384))
+
+raw_map(data = df$vals,
+        well = df$well,
+        plate = 384) +
+    ggtitle("Example 384-well plate") +
+    theme_dark() +
+    scale_fill_viridis()
+```
+
+```{r, include=FALSE}
+library(seqinr)
+## Workflow to create senquence logo's in R
+# https://davetang.org/muse/2013/01/30/sequence-logos-with-r/ 
+library(Biostrings)  
+library(seqLogo)
+
+# Create position weight matrix
+
+## Example sequences
+sequences <- c("GCCAAAAAAA",
+               "CGCAAAAAAA",
+               "TCATAAAAAC",
+               "GCATTAAAAA",
+               "TCGTAAAAAC")
+               
+#?consensusMatrix
+
+sequences <- DNAStringSet(sequences)
+cmx <- consensusMatrix(sequences)
+cmx
+
+hasOnlyBaseLetters(sequences)
+
+clean_cmx <- alphabetFrequency(sequences, baseOnly=TRUE)
+               
+#install if necessary
+#source("http://bioconductor.org/biocLite.R")
+#biocLite("seqLogo")
+
+
+
+#create data frame using the four vectors
+
+#define function that divides the frequency by the row sum i.e. proportions
+proportion <- function(x){
+  rs <- sum(x);
+  return(x / rs);
+}
+
+
+
+#create position weight matrix
+clean_cmx <- t(clean_cmx)
+clean_cmx <- as.data.frame(clean_cmx[c(1:4),])
+clean_cmx
+
+pwm <- apply(clean_cmx, 2, proportion)
+pwm
+pwm <- makePWM(pwm)
+```
+
+## Map
+```{r, echo=FALSE}
+library(tmap)
+library(tmaptools)
+
+data(World, metro, rivers, land)
+
+tmap_mode("plot")
+## tmap mode set to plotting
+tm_shape(land) +
+    tm_raster("elevation", palette = terrain.colors(10)) +
+tm_shape(World) +
+    tm_borders("white", lwd = .5) +
+    tm_text("iso_a3", size = "AREA") +
+tm_shape(metro) +
+    tm_symbols(col = "red", size = "pop2020", scale = .5) +
+tm_legend(show = FALSE)
+
+```
+
+## Sequence logo plot
+```{r}
+#png("hunchback.png")
+seqLogo(pwm)
+# dev.off()
+
+```
+
