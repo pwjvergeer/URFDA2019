@@ -1,0 +1,186 @@
+---
+title: "Network resources"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Demos and tutorials
+
+http://www.sthda.com/english/articles/33-social-network-analysis/135-network-visualization-essentials-in-r/
+
+https://www.r-bloggers.com/network-analysis-of-game-of-thrones-family-ties/
+
+https://shirinsplayground.netlify.com/2018/03/got_network/ 
+
+## Try out the latter one
+
+### Packages
+```{r}
+library(tidyverse)
+library(tidygraph)
+library(ggraph)
+library(readr)
+```
+
+### Data
+```{r}
+origin <- "https://github.com/mathbeveridge/asoiaf/archive/master.zip"
+destination <- here::here("labs", "18_networks", "data")
+dir.create(destination)
+
+download.file(path, 
+              destfile = file.path(
+              destination, "github_mathbeveridge_asoiaf_master.zip")
+              )
+unzip(zipfile = file.path(
+              destination, "github_mathbeveridge_asoiaf_master.zip"),
+      exdir = destination)
+files <- list.files(path = file.path(destination, 
+                                     "asoiaf-master",
+                                     "data"), 
+                    full.names = TRUE, recursive = TRUE)
+files
+```
+
+## Network analysis
+```{r}
+set.seed(1234)
+
+cooc_all_edges <- read_csv(files[1])
+
+main_ch <- cooc_all_edges %>%
+  select(-Type) %>%
+  gather(x, name, Source:Target) %>%
+  group_by(name) %>%
+  summarise(sum_weight = sum(weight)) %>%
+  ungroup()
+
+main_ch_l <- main_ch %>%
+  arrange(desc(sum_weight)) %>%
+  top_n(100, sum_weight)
+main_ch_l
+
+cooc_all_f <- cooc_all_edges %>%
+  filter(Source %in% main_ch_l$name & Target %in% main_ch_l$name)
+
+cooc_all_f
+
+### change to tbl_graph to access nodes and edges directly, using tidyverse tools
+as_tbl_graph(cooc_all_f, directed = FALSE)
+
+## remove multiple edges
+as_tbl_graph(cooc_all_f, directed = FALSE) %>%
+  activate(edges) %>%
+  filter(!edge_is_multiple())
+
+## salesperson traveler
+as_tbl_graph(cooc_all_f, directed = FALSE) %>%
+  activate(nodes) %>% 
+  mutate(n_rank_trv = node_rank_traveller()) %>%
+  arrange(n_rank_trv)
+
+## centrality
+as_tbl_graph(cooc_all_f, directed = FALSE) %>%
+  activate(nodes) %>% 
+  mutate(neighbors = centrality_degree()) %>%
+  arrange(-neighbors)
+
+## grouping
+as_tbl_graph(cooc_all_f, directed = FALSE) %>%
+  activate(nodes) %>% 
+  mutate(group = group_infomap()) %>%
+  arrange(-group)
+
+## keyplayer
+as_tbl_graph(cooc_all_f, directed = FALSE) %>%
+  activate(nodes) %>% 
+  mutate(center = node_is_center(),
+         keyplayer = node_is_keyplayer(k = 10)) %>%
+  arrange(desc(keyplayer))
+  
+## distance to center
+as_tbl_graph(cooc_all_f, directed = FALSE) %>%
+  activate(nodes) %>% 
+  mutate(dist_to_center = node_distance_to(node_is_center()))
+
+
+```
+
+
+### Combine 
+```{r}
+cooc_all_f_graph <- as_tbl_graph(cooc_all_f, directed = FALSE) %>%
+  mutate(n_rank_trv = node_rank_traveller(),
+         neighbors = centrality_degree(),
+         group = group_infomap(),
+         center = node_is_center(),
+         dist_to_center = node_distance_to(node_is_center()),
+         keyplayer = node_is_keyplayer(k = 10)) %>%
+  activate(edges) %>% 
+  filter(!edge_is_multiple()) %>%
+  mutate(centrality_e = centrality_edge_betweenness())
+
+cooc_all_f_graph
+
+## node tibble
+cooc_all_f_graph %>%
+  activate(nodes) %>% # %N>%
+  as_tibble()
+
+## edge tibble
+cooc_all_f_graph %>%
+  activate(edges) %>% # %E>%
+  as.tibble()
+
+```
+
+### Plots
+```{r}
+
+## layout
+layout <- create_layout(cooc_all_f_graph, 
+                        layout = "fr")
+
+## plot
+network_1 <- ggraph(layout) + 
+    geom_edge_density(aes(fill = weight)) +
+    geom_edge_link(aes(width = weight), alpha = 0.2) + 
+    geom_node_point(aes(color = factor(group)), size = 10) +
+    geom_node_text(aes(label = name), size = 8, repel = TRUE) +
+    scale_color_brewer(palette = "Set1") +
+    theme_graph() +
+    labs(title = "A Song of Ice and Fire character network",
+         subtitle = "Nodes are colored by group")
+
+ggsave(network_1, filename = here::here("labs",
+                             "18_networks",
+                             "network_got_1.svg"),
+       height = 100,
+       width = 100,
+       units = "cm",
+       dpi = 600)
+```
+
+
+### Adapting the graph
+```{r}
+cols <- RColorBrewer::brewer.pal(3, "Set1")
+
+ggraph(layout) + 
+    geom_edge_density(aes(fill = weight)) +
+    geom_edge_link(aes(width = weight), alpha = 0.2) + 
+    geom_node_point(aes(color = factor(center), size = dist_to_center)) +
+    geom_node_text(aes(label = name), size = 8, repel = TRUE) +
+    scale_colour_manual(values = c(cols[2], cols[1])) +
+    theme_graph() +
+    labs(title = "A Song of Ice and Fire character network",
+         subtitle = "Nodes are colored by centeredness")
+
+```
+
+
+
+

@@ -1,0 +1,191 @@
+---
+title: "Monte Carlo Simulations"
+author: "Marc A.T. Teunis"
+date: "4/19/2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Reference: after https://www.r-bloggers.com/introducing-the-montecarlo-package/
+
+## Packages
+```{r}
+# install.packages("MonteCarlo")
+library(MonteCarlo)
+library(tidyverse)
+```
+
+## Getting a simulation for a T-test
+
+Define the following function.
+```{r}
+
+
+# Define function that generates data and applies the method of interest
+
+ttest <- function(n, loc, scale) {
+  # generate sample:
+  sample <- rnorm(n, loc, scale)
+  
+  # calculate test statistic:
+  stat <- sqrt(n) * mean(sample) / sd(sample)
+  
+  # get test decision:
+  decision <- 1.96
+  
+  # return result:
+  return(list("decision" = decision))
+}
+
+# define parameter grid:
+
+n_grid <- c(50, 100, 250, 500)
+loc_grid <- seq(0, 1, 0.2)
+scale_grid <- c(1, 2)
+
+# collect parameter grids in list:
+param_list = list("n" = n_grid,
+                  "loc" = loc_grid,
+                  "scale" = scale_grid)
+
+
+mc_result <- MonteCarlo(
+  func = ttest,
+  nrep = 1000,
+  param_list = param_list
+)
+
+
+summary(mc_result)
+
+MakeTable(output=mc_result, rows="n", cols=c("loc","scale"), digits=2, include_meta=FALSE)
+
+
+
+```
+
+## ResultTable
+
+\begin{table}[h]
+\centering
+\resizebox{ 1 \textwidth}{!}{%
+\begin{tabular}{ rrrrrrrrrrrrrrr }
+\hline\hline\\\\
+ scale && \multicolumn{ 6 }{c}{ 1 } &  & \multicolumn{ 6 }{c}{ 2 } \\ 
+n/loc &  & 0 & 0.2 & 0.4 & 0.6 & 0.8 & 1 &  & 0 & 0.2 & 0.4 & 0.6 & 0.8 & 1 \\ 
+ &  &  &  &  &  &  &  &  &  &  &  &  &  &  \\ 
+50 &  & 1.96 & 1.96 & 1.96 & 1.96 & 1.96 & 1.96 &  & 1.96 & 1.96 & 1.96 & 1.96 & 1.96 & 1.96 \\ 
+100 &  & 1.96 & 1.96 & 1.96 & 1.96 & 1.96 & 1.96 &  & 1.96 & 1.96 & 1.96 & 1.96 & 1.96 & 1.96 \\ 
+250 &  & 1.96 & 1.96 & 1.96 & 1.96 & 1.96 & 1.96 &  & 1.96 & 1.96 & 1.96 & 1.96 & 1.96 & 1.96 \\ 
+500 &  & 1.96 & 1.96 & 1.96 & 1.96 & 1.96 & 1.96 &  & 1.96 & 1.96 & 1.96 & 1.96 & 1.96 & 1.96 \\ 
+\\
+\\
+\hline\hline
+\end{tabular}%
+}
+\caption{ decision  }
+\end{table}
+
+
+See the package Vignette for more details"
+
+
+## Try something else
+https://cran.r-project.org/web/packages/mmpf/vignettes/mmpf.html
+
+```{r}
+library(mmpf)
+library(randomForest)
+library(reshape2)
+
+data(swiss)
+
+fit = randomForest(Fertility ~ ., swiss)
+mp = marginalPrediction(swiss[, -1], "Education", c(10, nrow(swiss)), fit)
+mp
+
+
+## use the pertussis and gapminder combined dataset:
+gap_pertussis <- read_rds(path = here::here("data", "join_pertussis_gapminder.rds"))
+
+## we can only use the numeric  vars
+gap_pertussis_selected <- gap_pertussis %>%
+  dplyr::select(-c(country, 
+                   continent, 
+                   region
+                   )) %>% na.omit()
+
+## fit RF
+fit_gap_pertussis <- randomForest(
+  population ~ year + gdp + fertility + annual_pertussis_cases, gap_pertussis_selected)
+
+fit_gap_pertussis
+
+varImpPlot(fit_gap_pertussis)
+
+names(gap_pertussis_selected)
+
+mp_gap_pertussis = marginalPrediction(
+  gap_pertussis_selected, 
+  "population", 
+  c(20, 5), aggregate.fun = identity, 
+  fit_gap_pertussis)
+
+
+mp_gap_pertussis
+
+ggplot(melt(data.frame(mp_gap_pertussis), id.vars = "population"), aes(population, value, group = variable)) + 
+  geom_point() + 
+  geom_line()
+
+## infant mort against pertussis
+
+gap_pertussis %>%
+ggplot(aes(x = year,
+           y = annual_pertussis_cases)) +
+  geom_point(aes(colour = year))
+
+
+#from: https://eight2late.wordpress.com/2016/09/20/a-gentle-introduction-to-random-forests-using-r/
+library(rpart)  
+  
+  
+multiple_runs <- function(train_fraction,n,dataset){
+ fraction_correct <- rep(NA,n)
+ set.seed(42)
+ for (i in 1:n){
+dataset[,"train"] <- ifelse(runif(nrow(dataset))<0.8,1,0)
+trainColNum <- grep("train",names(dataset))
+typeColNum <- grep("Type",names(dataset))
+trainset <- dataset[dataset$train==1,-trainColNum]
+testset <- dataset[dataset$train==0,-trainColNum]
+rpart_model <- rpart(population~.,data = trainset, method="class")
+rpart_test_predict <- predict(rpart_model,testset[,-typeColNum],type="class")
+fraction_correct[i] <- mean(rpart_test_predict==testset$Type)
+  }
+
+ }
+
+
+multiple_runs(0.8, 10, dataset = gap_pertussis_selected)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
