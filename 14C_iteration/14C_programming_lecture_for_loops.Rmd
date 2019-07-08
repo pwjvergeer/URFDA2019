@@ -1,0 +1,196 @@
+---
+title: "Programming - Loops and iterations"
+author: "Marc A.T. Teunis"
+date: "`r Sys.Date()`"
+output:
+  ioslides_presentation:
+    highlight: pygments
+    widescreen: yes
+---
+
+```{r, root_1, include=FALSE}
+## defines the root of the project for later use
+require("rprojroot") || utils::install.packages("rprojroot")
+library(rprojroot)
+root <- find_root_file(criterion = is_rstudio_project)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, error = FALSE, message = FALSE)
+knitr::opts_knit$set(root.dir = root)
+```
+
+## Basic for loops in R
+
+ * How you can write a basic for loop in R
+ * Conceptually, a loop is a way to repeat a sequence of instructions under certain conditions. 
+ * They allow you to automate parts of your code that are in need of repetition. 
+ 
+## Printing a sequence of years
+
+Let’s get back to the conceptual meaning of a loop. Suppose you want to do several printouts of the following form: The year is [year] where [year] is equal to 2010, 2011, up to 2015. You can do this as follows:
+```
+print(paste("The year is", 2010))
+"The year is 2010"
+print(paste("The year is", 2011))
+"The year is 2011"
+print(paste("The year is", 2012))
+"The year is 2012"
+print(paste("The year is", 2013))
+"The year is 2013"
+print(paste("The year is", 2014))
+"The year is 2014"
+print(paste("The year is", 2015))
+"The year is 2015"
+```
+
+## Looping 
+
+- prevents typing 
+- prevents making mistakes
+
+## Reduce typing
+
+ * This is rather tedious: you repeat the same code chunk over and over. 
+ * Violates the DRY principle, known in every programming language: Don’t Repeat Yourself, at all cost. 
+ * In this case, by making use of a for loop in R, you can automate the repetitive part:
+
+## The "year" loop
+```{r}
+for (year in c(2010,2011,2012,2013,2014,2015)){
+  print(paste("The year is", year))
+}
+```
+
+## A generalised loop
+
+```
+for(i in sequence){
+command(sequence[i])
+}
+
+```
+The command is applied for each i-th element of the sequence
+
+## Understanding the previous "year" loop  
+
+* The best way to understand what is going on in the for loop, is by reading it as follows: 
+
+"For each year that is in the sequence c(2010,2011,2012,2013,2014,2015) you execute the code chunk print(paste("The year is", year))". 
+
+ * Once the for loop has executed the code chunk for every year in the vector, the loop stops and goes to the first instruction after the loop block.
+
+## The "year" loop rewritten
+```{r}
+for (year in 2010:2015){
+  print(paste("The year is", year))
+}
+```
+
+## Using i and a vector in a for loop
+As a last note on the for loop in R: in this case we made use of the variable year but in fact any variable could be used here. For example you could have used i, a commonly-used variable in for loops that stands for index:
+
+```{r}
+years <- c(2010:2015)
+
+for (i in years){
+  print(paste("The year is", i))
+
+}
+```
+
+## Using "next()"
+Let’s have a look at a more mathematical example. Suppose you need to print all uneven numbers between 1 and 10 but even numbers should not be printed. In that case your loop would look like this:
+```{r}
+for (i in 1:10) {
+  if (!i %% 2){
+    next
+  }
+    print(i)
+}
+
+## to assess the 'remainder' when devided by
+5 %% 2
+
+4 %% 2
+ 
+7 %% 2
+
+8.34 %% 2.4
+
+```
+
+## Explained
+Notice the introduction of the next statement. Let’s explore the meaning of this statement walking through this loop together:
+
+When i is between 1 and 10 we enter the loop and if not the loop stops. In case we enter the loop, we need to check if the value of i is uneven. If the value of i has a remainder of zero when divided by 2 (that’s why we use the modulus operand %%) we don’t enter the if statement, execute the print function and loop back. In case the remainder is non zero, the if statement evaluates to TRUE and we enter the conditional. Here we now see the next statement which causes to loop back to the i in 1:10 condition thereby ignoring the the instructions that follows (so the print(i)).
+
+# A few other examples
+
+## Squaring elements in vector
+```{r}
+for(i in 1:5){
+  print(i^2)
+}
+```
+
+## Creating a storage vector
+```{r}
+x <- c(1:5)
+
+storage <- numeric()
+
+for(i in x){
+  storage[i] <- (x[i])^2
+}
+storage
+```
+
+## A not so neat vector
+```{r}
+x <- c(-3, 1, -4, 5, 6, -7)
+storage <- numeric()
+for(i in x){
+  storage[i] <- (x[i])^2
+}
+storage
+```
+
+## "if" statments in a for loop
+`if` and `else` are not vectorised
+But you can make them behave as vectorised when putting them in a `for`-loop
+
+```{r}
+
+temperatures <- c(-20, -56, -3, 3, 11, 25, 32, 43)
+
+result <- character(length = length(temperatures))
+
+for(i in temperatures){
+  
+  if(result[i] > 0 & result[i] <= 20){
+  print("unpleasant")
+  }
+    if(i > 20){
+  print("warm")
+  }
+    if(i <= 0) {
+  print("cold")
+  }
+}
+```
+
+## "else" statements
+```{r}
+ages <- c(2, 4, 12, 16, 11, 34, 25, 18, 27, 55, 89, 90)
+
+
+age <- function(ages){
+    if(ages >= 18){
+    print("adult")
+  } else {
+    print("youth")
+  }
+}
+```
+
