@@ -1,0 +1,97 @@
+---
+title: "Resources and credits"
+author: "Teunis, Marc A.T."
+date: "13-7-2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Credits
+
+For this course materials have been adapted from:
+ 
+  - Wickham and Grolemund, "R for Data Science", 2017, O'Reily
+  - Field et. al., 2015, "Discovering Statistics Using R", Sage Publications Ltd.
+  - Using R for Offical Statistics Symposium - CBS - 2018
+  - CSAMA Course for Genome Statitics - 2018
+  - Materials from https://github.com/NCEAS/oss-lessons "National Center for Ecological Analysis and Synthesis"
+  
+  
+## Resources:
+
+### Youtube
+ - https://www.youtube.com/watch?v=rz3_FDVt9eg 
+ - https://www.youtube.com/watch?v=go5Au01Jrvs
+ - https://www.youtube.com/watch?v=7UlWJWfZO9M
+ - https://www.youtube.com/watch?v=GyNqlOjhPCQ
+ - https://www.youtube.com/watch?v=1GmQ5BdAhG4
+ 
+### R-bloggers
+
+ - https://www.r-bloggers.com/how-to-learn-r-2/
+ - https://digitheadslabnotebook.blogspot.com/2011/06/drawing-heatmaps-in-r.html?m=1
+ 
+
+### Bioconductor
+ 
+ - http://bioconductor.org/install/
+ - http://bioconductor.org/help/package-vignettes/
+ - http://bioconductor.org/packages/release/BiocViews.html#___Workflow
+
+### Cheatsheets
+
+ - https://www.rstudio.com/resources/cheatsheets/
+ - https://www.rstudio.com/wp-content/uploads/2015/02/data-wrangling-cheatsheet.pdf
+ - https://www.rstudio.com/wp-content/uploads/2016/11/ggplot2-cheatsheet-2.1.pdf
+ - https://github.com/rstudio/cheatsheets/raw/master/data-import.pdf
+
+### Books 
+
+ - http://r4ds.had.co.nz/
+ - https://www.tidytextmining.com/
+ 
+### Github
+
+ - https://github.com/jennybc
+ - https://github.com/hadley
+ 
+### Code style / File Names / Headers 
+
+**(Linux) files naming:**
+
+ - https://www.cyberciti.biz/faq/linuxunix-rules-for-naming-file-and-directory-names/
+ - http://adv-r.had.co.nz/Style.html
+ 
+**R-code style:**
+- https://style.tidyverse.org/
+- https://google.github.io/styleguide/Rguide.xml
+- http://adv-r.had.co.nz/Style.html
+
+**Data File Headers (variable_names) 
+Basically the conventions for naming variables in R can be copied to naming variables (column names) in Data files: Basically a column name in R is a variable
+
+Some general rules:
+
+ - Avoid using special characters (!@#$%^&*()+=<>?,/\|). They are reserved for other things in R.
+ - Do NOT use spaces in column headers (or file names). This makes it harder to work with these column-names in R (It is possible though: `header A` will work)
+ - Choose a style that is appealing to you and be consistent.
+
+There are basically a number of options that are considered valid:
+
+
+    alllowercase: e.g. adjustcolor
+    period.separated: e.g. plot.new
+    underscore_separated: e.g. numeric_version (or also called snake_case)
+    lowerCamelCase: e.g. addTaskCallback
+    UpperCamelCase: e.g. SignatureMethod
+
+I prefer `snake_case` and have tried to implement it in naming all files and variables in this course. If you spot a mistake, please sent me a pull request ;-()
+
+**Execeptions**
+Some files contain all capitals (such as README), this is done deliberatly. Some code contains other conventions due to laziness of not wanting to rewrite the whole code, or I could also say that this is for illustrative purpose ...
+
+
+ 
