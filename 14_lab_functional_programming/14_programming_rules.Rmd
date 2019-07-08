@@ -1,0 +1,81 @@
+---
+title: "Rules for programming"
+author: "Marc A.T. Teunis"
+date: "`r Sys.Date()`"
+output:
+  ioslides_presentation: 
+    highlight: pygments
+    widescreen: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.width = 5, fig.height = 3)
+```
+
+```{r, root_1, include=FALSE}
+## defines the root of the project for later use
+require("rprojroot") || utils::install.packages("rprojroot")
+library(rprojroot)
+root <- find_root_file(criterion = is_rstudio_project)
+```
+
+## Simple rules to start with
+
+ * Write code for humans, NOT for computers!
+ * Keep everything in the same place (work with projects)
+ * Do not repeat yourself (more than two times --> write a function)
+ * Do on thing at a time
+ * Take a break if it get's too hairy
+
+## Guerilla analytics principles
+Specific guidelines from Ridge
+
+* Use a simple, relatively flat folder lay-out for the project
+* Never edit raw data files received from the 'client'
+* Use a data log to track metadata of received data sets
+* Store supporting material near the data 
+* Add row IDs to source data when merging datasets
+* Keep original file names
+* Load data as plain text and typecast as little as possible (all lower case)
+* Do everything programmatically
+* Keep original columns and add edited versions of a column as a new column
+
+## Project folder structure
+
+ * Ridge promotes the use of a clear and simple project folder structure. Its
+structure should be simple to use and transparant for all members of the
+analytics team. 
+
+ * The data manipulation environment (DME) is the area where all project data is manipulated and analysed. It can be a formal database management system or a folder in the file system. 
+
+ * The DME for this course is the **Global Environment** of RStudio Server
+
+ * The raw data is stored in the **data-raw** folder. Edited data or genearated datasets (cleaning etc.) are stored in the **data** folder.
+ 
+## A project folder example
+| Folder       | Description  |
+|--------------|----------------------------------------------------------------------------------------------|
+| **/R**   | The project code used for loading and analyzing data. |
+| **/inst** | Generic code of utilities and functions used throughout the project. |
+| **/data-raw** | Raw data as received. Note that data sets are stored in a folder with their unique ID (e.g. D010). Also note that each data set folder contains a folder **/data-raw/supporting** that contains supporting material. The metadata of the data sets is maintained in a data log (**data-log.xlsx**). |
+| **/data** | A folder contained edited and generated data |
+| **/doc** | The documents that result from overall analyses (e.g. like an R markdown document). |
+| **/Vignettes** | A folder similar in structure to **data-raw** with the different work products that are produced within the project. A work product is a single unit of analysis with a clearly defined product to be delivered. The metadata of the work products is maintained in a work products log (**work-products-log.xlsx**). |
+
+## R package
+This structure follows the R package structure
+
+To illustrate this we will start a new package:
+
+ 1. Think about a good name (max 8 letter, lowercase) 
+ 2. Initiate a new R package: File -> New Project -> Package using Devtools
+ 3. Look at the foldernames in the new package Project
+ 4. This is a standard folder structure that provides a clear framework for managing files 
+ 5. Adhere to this folder-structure, even when not working in a package.
+ 
+ 
+
+
+
+
+

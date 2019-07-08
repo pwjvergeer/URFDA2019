@@ -1,0 +1,120 @@
+---
+title: "R programming"
+author: "Marc A.T. Teunis"
+date: "`r Sys.Date()`"
+output:
+  ioslides_presentation:
+    highlight: pygments
+    widescreen: yes
+---
+
+
+```{r, root_1, include=FALSE}
+## defines the root of the project for later use
+require("rprojroot") || utils::install.packages("rprojroot")
+library(rprojroot)
+root <- find_root_file(criterion = is_rstudio_project)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, error = FALSE, message = FALSE)
+knitr::opts_knit$set(root.dir = root)
+```
+## Programming is a creative and iterative process, it takes time to learn an practice to maintain
+
+**__"Ten minutes of R a day, keeps Excel away"__**
+
+## R-programming 
+
+ - Improve your programming skills 
+ - Programming is needed for all data science work
+ - You must use a computer to do data science;
+ - You cannot do it in your head
+ - Or with pencil and paper
+
+## Data wrangling
+```{r, echo = FALSE}
+path_to_wrangle_diagram <- file.path(root, "images", "data-science.png")
+knitr::include_graphics(path_to_wrangle_diagram, dpi = 60)
+```
+
+## "Write code for humans, not for computers"
+ - Code is a tool of communication
+ - It tells the computer what to do 
+ - It tells human beings what the computer is supposed to do
+ - Think of code as a vehicle for communication 
+ - Annotate code with "# Comments"
+ - Write code and comments in English!!, why?
+ - Future-you will be grateful! 
+ - Getting better at programming also involves getting better at communicating.
+ - It improves your typing skills
+
+## Write clear and consistently formatted code
+```{r, eval=FALSE}
+# reads data file 1 (SHL) 
+shl_91010 <- 
+   read.csv(file = paste0(root, 
+     "/data-raw/RAAK 91010 pat gb 19800101 1e van 2_SHL_EDITED.csv"), 
+                    sep = ";", 
+                    na.strings = "-", 
+                    stringsAsFactors = FALSE)
+
+# reads data file 2 (SHL) 
+shl_56006 <- 
+   read.csv(file = paste0(root, 
+     "/data-raw/RAAK_56006_1e_van_2_SHL_EDITED.csv"), 
+                    sep = ";", 
+                    na.strings = "-", 
+                    stringsAsFactors = FALSE)
+```
+## Rewriting is key!!
+ 
+ - The first expression of your ideas is unlikely to be particularly clear or even complete
+ - You may need to rewrite multiple times
+ - It's worth looking at your code and thinking about whether or not it's obvious what you've done. 
+ - If you spend time rewriting your code while the ideas are fresh, you can save a lot of time later trying to recreate what your code did. 
+ - Do not rewrite every function you write, most of the times "good is good enought"
+ 
+ "Wickham and Grolemund, 2017"
+ 
+# Programming lectures
+
+## Lecture 1: Vectors
+ R has a few datastructures that you need to know
+ 
+ - Vector
+ - List
+ - Dataframe
+ - Matrix
+ 
+## Lecture 2: The pipe operator
+ 
+```
+result <- a data object %>%
+  do_first_this %>%
+  than_do_this %>%
+  than_that %>%
+  result
+```
+
+```{r, echo=FALSE, fig.align='right'}
+knitr::include_graphics(path = file.path(root, "images", "pipe.png"),
+                        dpi = 80)
+```
+
+
+## Lecture 3: Writing functions
+ 
+ * Basic function template
+ * How to write functions
+ * Messages, Warnings and Errors
+ * Using functions
+ * Source functions
+ 
+ ## Lecture 4: Iteration
+
+  * `for`-loops
+  * `if`-staments
+  * `map` family of functions
+  * The `{purrr}` package
+  

@@ -1,0 +1,354 @@
+---
+title: "Factors or so-called grouping variables"
+author: "Marc A.T. Teunis"
+date: "`r Sys.Date()`"
+output:
+  ioslides_presentation: 
+    highlight: pygments
+    widescreen: yes
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      error = FALSE, 
+                          fig.width = 4,
+                          fig.height = 4)
+```
+
+```{r, root_1, include=FALSE}
+## defines the root of the project for later use
+require("rprojroot") || utils::install.packages("rprojroot")
+library(rprojroot)
+root <- find_root_file(criterion = is_rstudio_project)
+```
+
+# Factors
+
+```{r}
+library("tidyverse")
+library("forcats")
+```
+
+```{r, echo=FALSE, fig.align='right'}
+knitr::include_graphics(path = file.path(root, "images", "forcats.png"), dpi = 100)
+```
+
+## Introduction
+
+ * In R, factors are used to work with categorical variables  
+ * Variables that have a fixed and known set of possible values.  
+ * They are also useful when you want to display character vectors in a non-alphabetical order.
+
+## A short example
+```{r, echo=FALSE}
+names <- tibble(surname = c("Marc", "Pascal", 
+                            "Stefan", "Ronald",
+                            "Arie-Jaak", "Mieke"),
+                hobby = c("Climbing", "Climbing",
+                          "Swimming", "Running",
+                          "Karate", "Swimming"))
+```
+
+```{r}
+names 
+names$hobby <- as_factor(names$hobby) 
+```
+
+## Checking the change to factor
+```{r}
+names
+levels(names$hobby)
+```
+
+## Prerequisites
+
+ * To work with **fac**tors, we'll use the __forcats__ package, which provides tools for dealing with **cat**egorical variables
+ 
+ * It provides a wide range of helpers for working with factors. forcats is not part of the core tidyverse
+ * We need to load it explicitly.
+```{r packages, message = FALSE}
+library(tidyverse)
+library(forcats)
+```
+
+## Creating factors
+
+Imagine that you have a variable that records month:
+```{r}
+x1 <- c("Dec", "Apr", "Jan", "Mar")
+```
+
+Using a string to record this variable has two problems:
+
+## Levels
+
+There are only twelve possible months, and there's nothing saving you from typos:
+```{r}
+x2 <- c("Dec", "Apr", "Jam", "Mar")
+```
+
+## Sorting
+
+It doesn't sort in a useful way:
+```{r}
+sort(x1)
+```
+
+## Creating a list of valid levels
+
+ * You can fix both of these problems with a factor. 
+ * To create a factor you must start by creating a list of the valid __levels__:
+
+```{r}
+month_levels <- c(
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+```
+
+## Now you can create a factor:
+
+```{r}
+y1 <- factor(x1, levels = month_levels)
+y1
+sort(y1)
+```
+
+## Missing levels
+And any values not in the set will be silently converted to NA:
+
+```{r}
+y2 <- factor(x2, levels = month_levels)
+y2
+```
+
+## Warnings prevent typos
+If you want a warning, you can use `readr::parse_factor()`:
+
+```{r}
+y2 <- parse_factor(x2, levels = month_levels)
+```
+
+If you omit the levels, they'll be taken from the data in alphabetical order:
+
+```{r}
+factor(x1)
+```
+
+## Setting the order to order of appearance
+
+```{r}
+f1 <- factor(x1, levels = unique(x1))
+f1
+
+f2 <- x1 %>% factor() %>% fct_inorder()
+f2
+```
+
+##Acces the levels of factor
+If you ever need to access the set of valid levels directly, you can do so with `levels()`:
+
+```{r}
+levels(f2)
+```
+
+## General Social Survey
+
+For the rest of this lesson, we're going to focus on `forcats::gss_cat`. It's a sample of data from the [General Social Survey](http://gss.norc.org), which is a long-running US survey conducted by the independent research organization NORC at the University of Chicago. 
+
+```{r}
+gss_cat
+```
+
+## Investigating a factor
+
+ * When factors are stored in a tibble, you can't see their levels so easily. 
+ * One way to see them is with `count()`:
+
+```{r}
+gss_cat %>%
+  count(race)
+```
+
+## Or with a bar chart:
+
+```{r}
+ggplot(gss_cat, aes(race)) +
+  geom_bar()
+```
+__Here you can not see "empty" levels__
+
+## Unused levels
+```{r}
+ggplot(gss_cat, aes(race)) +
+  geom_bar() +
+  scale_x_discrete(drop = FALSE)
+```
+
+## Modifying factor order
+```{r, echo=FALSE}
+relig <- gss_cat %>%
+  group_by(relig) %>%
+  summarise(
+    age = mean(age, na.rm = TRUE),
+    tvhours = mean(tvhours, na.rm = TRUE),
+    n = n())
+ggplot(relig, aes(tvhours, relig)) + geom_point()
+```
+
+## Improving the factor ordering
+We can improve it by reordering the levels of `relig` using `fct_reorder()`. `fct_reorder()` takes three arguments:
+
+* `f`, the factor whose levels you want to modify.
+* `x`, a numeric vector that you want to use to reorder the levels.
+* Optionally, `fun`, a function that's used if there are multiple values of
+  `x` for each value of `f`. The default value is `median`.
+
+## Reordered
+```{r}
+ggplot(relig, aes(tvhours, fct_reorder(relig, tvhours))) +
+  geom_point()
+```
+
+## Using "mutate()"
+As you start making more complicated transformations, I'd recommend moving them out of `aes()` and into a separate `mutate()` step. For example, you could rewrite the plot above as:
+
+```{r, eval = FALSE, fig.width=0.5, fig.height=0.5}
+relig %>%
+  mutate(relig = fct_reorder(relig, tvhours)) %>%
+  ggplot(aes(tvhours, relig)) +
+    geom_point()
+```
+__This makes
+
+## "fct_relevel" vs "fct_reorder" 
+What if we create a similar plot looking at how average age varies across reported income level?
+
+```{r, fig.width=2, fig.height=2}
+rincome <- gss_cat %>%
+  group_by(rincome) %>%
+  summarise(
+    age = mean(age, na.rm = TRUE),
+    tvhours = mean(tvhours, na.rm = TRUE),
+    n = n())
+ggplot(rincome, aes(age, fct_reorder(rincome, age))) + geom_point()
+```
+
+## Arbitrary order vs principle order
+
+ * Here, arbitrarily reordering the levels isn't a good idea! 
+ * That's because `rincome` already has a principled order that we shouldn't mess with. 
+ * Reserve `fct_reorder()` for factors whose levels are arbitrarily ordered.
+
+## Using "fct_relevel"
+
+ * It does make sense to pull "Not applicable" to the front with the other special levels. 
+ * You can use `fct_relevel()`. 
+ * It takes a factor, `f`, and then any number of levels that you want to move to the front of the line.
+
+```{r}
+ggplot(rincome, aes(age, fct_relevel(rincome, "Not applicable"))) +
+  geom_point()
+```
+
+## Recode factors for line colours
+`fct_reorder2()` reorders the factor by the `y` values associated with the largest `x` values. This makes the plot easier to read because the line colours line up with the legend.
+
+```{r, echo=FALSE, fig.align = "default", out.width = "50%", fig.width = 4}
+by_age <- gss_cat %>%
+  filter(!is.na(age)) %>%
+  group_by(age, marital) %>%
+  count() %>%
+  mutate(prop = n / sum(n))
+
+ggplot(by_age, aes(age, prop, colour = marital)) +
+  geom_line(na.rm = TRUE)
+
+ggplot(by_age, aes(age, prop, colour = fct_reorder2(marital, age, prop))) +
+  geom_line() +
+  labs(colour = "marital")
+```
+
+## Order factors for bar plots
+```{r}
+gss_cat %>%
+  mutate(marital = marital %>% fct_infreq() %>% fct_rev()) %>%
+  ggplot(aes(marital)) +
+    geom_bar()
+```
+
+## Modifying factor level values
+
+ * The most general and powerful tool is `fct_recode()`.   * It allows you to recode, or change, the value of each level. For example, take the `gss_cat$partyid`:
+
+```{r}
+gss_cat %>% count(partyid)
+```
+
+## Changing level labels, example
+
+```{r}
+gss_cat %>%
+  mutate(partyid = fct_recode(partyid,
+    "Republican, strong"    = "Strong republican",
+    "Republican, weak"      = "Not str republican",
+    "Independent, near rep" = "Ind,near rep",
+    "Independent, near dem" = "Ind,near dem",
+    "Democrat, weak"        = "Not str democrat",
+    "Democrat, strong"      = "Strong democrat"
+  )) %>%
+  count(partyid)
+```
+
+## Collapsing levels
+```{r}
+gss_cat %>%
+  mutate(partyid = fct_recode(partyid,
+    "Republican, strong"    = "Strong republican",
+    "Republican, weak"      = "Not str republican",
+    "Independent, near rep" = "Ind,near rep",
+    "Independent, near dem" = "Ind,near dem",
+    "Democrat, weak"        = "Not str democrat",
+    "Democrat, strong"      = "Strong democrat",
+    "Other"                 = "No answer",
+    "Other"                 = "Don't know",
+    "Other"                 = "Other party"
+  )) %>%
+  count(partyid)
+```
+
+## Collapse many levels
+If you want to collapse a lot of levels, `fct_collapse()` is a useful variant of `fct_recode()`. For each new variable, you can provide a vector of old levels:
+
+```{r}
+gss_cat %>%
+  mutate(partyid = fct_collapse(partyid,
+    other = c("No answer", "Don't know", "Other party"),
+    rep = c("Strong republican", "Not str republican"),
+    ind = c("Ind,near rep", "Independent", "Ind,near dem"),
+    dem = c("Not str democrat", "Strong democrat")
+  )) %>%
+  count(partyid)
+```
+
+## Lump levels together
+Sometimes you just want to lump together all the small groups to make a plot or table simpler. That's the job of `fct_lump()`:
+
+```{r}
+gss_cat %>%
+  mutate(relig = fct_lump(relig)) %>%
+  count(relig)
+```
+
+## Specifying how many groups
+Instead, we can use the `n` parameter to specify how many groups (excluding other) we want to keep:
+
+```{r}
+gss_cat %>%
+  mutate(relig = fct_lump(relig, n = 10)) %>%
+  count(relig, sort = TRUE) %>%
+  print(n = Inf)
+```
+

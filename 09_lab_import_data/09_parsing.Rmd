@@ -1,0 +1,81 @@
+---
+title: "Finding a string in large numeric"
+author: "Marc A.T. Teunis"
+date: "4/18/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Packages
+```{r}
+library(tidyverse)
+```
+
+## Coding mistakes cause parse errors
+Sometimes you will read in a large datafile containing numeric columns. But what if somebody made a coding or entry error in one of the numeric columns and introduced one value containing a string. 
+
+See what happens if we load the following simulated data
+I have put a string value ("AAAABBDF") at row position 47 
+```{r}
+data <- read_csv(
+  file = here::here(
+  "data",
+  "one_string_in_here_somewhere.txt"))
+
+```
+
+## Inspect the data
+```{r}
+data
+
+data$waaf[45:50]
+
+data[c(40:50),]
+```
+
+## Data types
+The readr functions use a heuristic to determine the datatype of a variable. Default the first 1000 rows of a datafile will be parsed on the basis of which readr will decide what type it is.
+
+In this case the string "AAAABBDF" causes readr to parse column`waaf` as a character type column.
+
+We cab covert column `waaf` to a numeric
+```{r}
+data$waaf <- as.numeric(data$waaf)
+
+```
+
+This operation succeeds but comes with a warning:
+
+Let's see what happened:
+
+```{r}
+data$waaf[45:50]
+```
+
+The string "AAAABBDF" was converted to an NA.
+
+## Specifying data type during load
+We can specifiy the type of the variable if we know it in advance, using the `col_types = cols()` argument in the `readr::read_...()` functions :
+```{r}
+data <- read_csv(
+  file = here::here(
+  "data",
+  "one_string_in_here_somewhere.txt"),
+  col_types = cols(
+  fooy = col_double(),
+  waaf = col_double()
+))
+
+```
+
+`{readr}` is maybe smarter than we think: it parses the second column as a double but warns us about a strange record causing 1 parsing failure:
+
+So no need to remove or recode the strange record, we just let `{readr}` do the heavy lifting for us ;-)
+
+## A very large file
+Image you have a very large file: because readr uses the heuristic, only the first 1000 rows are used to geuss the variable types. When there are more than 1000 rows you have to be extra alert to coercin issues and datatype conversions 
+
+

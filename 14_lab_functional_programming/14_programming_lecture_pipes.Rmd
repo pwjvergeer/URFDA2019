@@ -1,0 +1,212 @@
+---
+title: "Programming - Pipes"
+author: "Marc A.T. Teunis"
+date: "`r Sys.Date()`"
+output:
+  ioslides_presentation:
+    highlight: pygments
+    widescreen: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.width = 5, fig.height = 3)
+```
+
+```{r, root_1, include=FALSE}
+## defines the root of the project for later use
+require("rprojroot") || utils::install.packages("rprojroot")
+library(rprojroot)
+root <- find_root_file(criterion = is_rstudio_project)
+```
+
+# The pipe or "%>%"
+```{r, fig.align='right', echo=FALSE}
+knitr::include_graphics(path = file.path(root, "images", "pipe.png"), dpi = 50)
+```
+
+## Pipes
+
+ - The pipe, `%>%`, comes from the __magrittr__ package by Stefan Milton Bache
+ - Load it explicitly:
+
+```{r magrittr, message = FALSE}
+library(magrittr)
+```
+
+## Piping alternatives
+
+ - It helps you write code in a way that is easier to read and understand. To see why the pipe is so useful, we're going to explore a number of ways of writing the same code. Let's use code to sing a song:
+ 
+ *_"Clocks"_* by Coldplay
+ 
+ *The lights go out and I can't be saved*
+
+ *Tides that I tried to swim against*
+
+ *Have brought me down upon my knees*
+
+ *Oh I beg, I beg and plead, singing*
+
+## How to tell a code story?
+
+First we create the crucial variable in this song "I"
+```{r, eval = FALSE}
+I <- "me"
+
+```
+
+And we'll use a function for each key verb: 
+
+ - `saved()`
+ - `swim()`
+ - `brought()`
+ - `beg()`
+ - `singing()`
+
+## Four ways to recap the song
+Using the object `I` and these verbs, there are (at least) four ways we could retell the song in code:
+
+ 1. Save each intermediate step as a new object.
+ 2. Overwrite the original object many times.
+ 3. Compose functions.
+ 4. Use the pipe.
+
+## Intermediate steps
+The simplest approach is to save each step as a new object:
+
+```{r, eval = FALSE}
+me_1 <- saved(I, can = FALSE, lights = "out")
+me_2 <- swim(I,  tides = "against")
+me_3 <- brought(me_2, down = TRUE, knees = "upon")
+me_4 <- singing(beg(I, plead = TRUE, square = TRUE)
+```
+
+## Cluttering code by naming variables
+ - It forces you to name each intermediate element. 
+ - If there are natural names, this is a good idea, and you should do it. 
+ - In this example, there aren't natural names, and you add numeric suffixes to make the names unique. That leads to two problems:
+
+ 1. The code is cluttered with unimportant names
+ 2. You have to carefully increment the suffix on each line. 
+
+## Sidestep: Do not worry about objects occupying memory 
+```{r}
+diamonds <- ggplot2::diamonds
+diamonds2 <- diamonds %>% 
+  dplyr::mutate(price_per_carat = price / carat)
+
+pryr::object_size(diamonds); pryr::object_size(diamonds2)
+pryr::object_size(diamonds, diamonds2)
+```
+
+## Memory object size
+`pryr::object_size()` gives the memory occupied by all of its arguments. The results seem counterintuitive at first:
+
+* `diamonds` takes up 3.46 MB,
+* `diamonds2` takes up 3.89 MB,
+* `diamonds` and `diamonds2` together take up 3.89 MB!
+
+## How can that work? 
+ - `diamonds2` has 10 columns in common with `diamonds`: 
+ - There's no need to duplicate all that data, 
+ - The two data frames have variables in common. 
+ - These variables will only get copied if you modify one of them. 
+ 
+## Modifying a value increases memory occupation 
+we modify a single value in `diamonds$carat`. 
+
+```{r}
+diamonds$carat[1] <- NA
+pryr::object_size(diamonds); pryr::object_size(diamonds2)
+pryr::object_size(diamonds, diamonds2)
+
+```
+
+## Back to *Clocks*: Overwrite the original
+
+Instead of creating intermediate objects at each step, we could overwrite the original object:
+
+```{r, eval = FALSE}
+me <- saved(I, can = FALSE, lights = "out")
+me <- swim(I,  tides = "against")
+me <- brought(me, down = TRUE, knees = "upon")
+me <- singing(beg(I, plead = TRUE, square = TRUE))
+```
+
+This is less typing (and less thinking), so you're less likely to make mistakes. However, there are two problems:
+
+ 1. Debugging is painful: if you make a mistake you'll need to re-run the complete pipeline from the beginning.
+ 2. The repetition of the object being transformed (we've written `me` multiple times!) obscures what's changing on each line. 
+
+## Function composition
+
+Another approach is to abandon assignment and just string the function calls together:
+
+```{r, eval = FALSE}
+saved(singing(
+  beg(I, plead = TRUE, square = TRUE,    
+    brought(me, down = TRUE, knees = "upon"),
+    swim(I, tides = "against")
+    )), can = FALSE, lights = "out"
+  )
+```
+
+Because of the parentheses `(())`, this code is hard for a human to consume.
+
+## Use the pipe 
+
+Finally, we can use the pipe:
+
+```{r, eval = FALSE}
+me <- saved(I, can = FALSE, lights = "out") %>%
+  swim(tides = "against") %>%
+  brought(down = TRUE, knees = "upon") %>%
+  beg(plead = TRUE, square = TRUE) %>%
+  singing()
+```
+
+"You read this like: me can be saved, the lights are out, then me swims against the tides, then me is brought down upon knees, then me is begging (two tiimes) and pleading, while singing."
+
+sounds familiar?
+
+The pipe operator feeds the object from the left call to the expression on the right.
+
+## Let's look at an arithmetic example
+ - Assume we want to take the mean of 100 random normals, 
+ - Take the square root of that mean, 
+ - Multiply that number by the number of normals,  
+ - Take this number and add 234*123 
+ - And finally feed that into a variable called "var_sum"
+ 
+```{r}
+set.seed(12345)
+var_sum_pipe <- rnorm(100) %>%
+  mean() %>%
+  sqrt() %>%
+  multiply_by(100) %>% # could have used `*` as well
+  add(234*123) # could have used `+` here as well
+
+# look at ?maggrittr::extract for various aliases to 'normal' arithmethic  functions to use in a pipe  
+```
+ 
+## The above in 'normal' R code
+```{r}
+set.seed(12345)
+var_sum_normal <- 
+((234*123) + (100*sqrt(mean(rnorm(100)
+               )
+          )
+))
+var_sum_normal
+var_sum_normal == var_sum_pipe
+``` 
+ 
+## See the difference?? 
+ * Both options do the same thing!!
+ * Although the pipe option is a bit more typing, it is certainly much more human-readable: 
+ * Remember "Write code for humans, not for computers"
+
+## Other tools from magrittr
+ - The "r4ds" book gives you more information on how to use other tools from {magrittr} and also when not to use the pipe. 
+ - This is out of scope of the course and just try anyway!!
+ 
