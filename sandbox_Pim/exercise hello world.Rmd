@@ -1,0 +1,72 @@
+---
+title: "Exercise - “Hello World!”"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, root_1, include=FALSE} 
+
+## defines the root of the project for later use 
+
+require("rprojroot") || utils::install.packages("rprojroot") 
+
+library(rprojroot) 
+
+root <- find_root_file(criterion = is_rstudio_project) 
+```
+```{r}
+library(tidyverse)
+library(stringr)
+```
+
+```{r}
+character_string <- c("Hello World!")
+print(character_string)
+```
+
+```{r}
+hello <- c("Hello")
+world <- c("World!")
+this_is <- c("This is")
+one <- c(1)
+character_vector <- c("character vector;")
+
+sentence <- paste(this_is, one, character_vector, hello, world, sep = " ")
+sentence
+```
+```{r}
+hello <- c("Hello")
+world <- c("World!")
+this_is <- c("This is")
+one <- c(1)
+character_vector <- c("character vector;")
+
+sentence <- paste0(this_is, one, character_vector, hello, world, sep = " ")
+sentence
+```
+
+```{r}
+class(sentence)
+length(sentence)
+```
+
+```{r}
+one <- as.numeric(one)
+one
+```
+
+```{r}
+list_hw <- as.list(c(this_is, one, character_vector, hello, world))
+head(list_hw)
+list_hw[[5]]
+class(list_hw[[2]])
+```
+```{r}
+x <- readClipboard()
+library(WRITEclipboard)
+```
+

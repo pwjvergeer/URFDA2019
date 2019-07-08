@@ -1,0 +1,42 @@
+---
+title: "Functions_P"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r}
+require("rprojroot") || utils::install.packages("rprojroot")
+library(rprojroot)
+root <- find_root_file(criterion = is_rstudio_project)
+
+```
+```{r}
+df <- tibble::tibble(
+  a = rnorm(10),
+  b = rnorm(10),
+  c = rnorm(10),
+  d = rnorm(10))
+
+normalize_df <- function(x){
+ (x - min(x, na.rm = TRUE)) / 
+  (max(x, na.rm = TRUE) - min(x, na.rm = TRUE)) 
+}
+  
+  
+```
+```{r}
+
+dfa <- normalize_df(df$a)
+dfa
+
+```
+```{r}
+##bous exercise
+
+library(Biostrings)
+DNA_ALPHABET
+
+```
+

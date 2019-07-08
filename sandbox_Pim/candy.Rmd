@@ -1,0 +1,21 @@
+---
+title: "candy"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+name <- c("mars", "snickers", "twix" )
+qty <- c()
+```
+
+```{r}
+table_2 <- list(candies = c("mars", "mars", "twix", "snickers")
+                amount  = lenght(4))
+
+
+```
+

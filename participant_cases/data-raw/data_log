@@ -1,0 +1,5 @@
+## Data Log
+## Date is format dd/mm/yyy
+##
+file_name,date_recieved,owner,location,remarks
+"Cursus R databse.sav,11/04/2018,"...","./data-raw/D010/",SPSS-archive

@@ -1,0 +1,637 @@
+---
+title: "Exploratory Data Analysis - A case example"
+author: "Marc A.T. Teunis"
+date: "4/16/2019"
+output:
+  pdf_document:
+    toc: yes
+  html_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      warning = FALSE,
+                      message = FALSE,
+                      fig.height = 6,
+                      fig.width = 8)
+
+ggplot2::theme_set(ggplot2::theme_bw())
+```
+
+
+## Introduction - What is Exploratory Data Analysis?
+
+The process of Exploratory Data Analysis is not a formal process with strict rules, steps or guidelines. Instead is a step-wise iterative process aimed at gaining more insight in the nature and peculiarities of the data. It is a process of several rounds of exploring:
+
+ - The data-types of the variables in the data
+ - The unique values in variables
+ - Errors and coding mistakes in the data
+ - Outliers and 'strange' values
+ - Data ditributions 
+ - Exploratory graphs to investigate the data
+ - Descriptive statistics
+ 
+For demo purposes, I explain a number of exploratory steps below on an example (real life) data set.
+There are also packages available in R to speed up this process and generate automatic reports for several steps in the EDA process. One example of such package is `{DataExplorer}`. In the last bit of this demo we will try out this package to compare it's output to our manual steps.
+
+## Document layout
+My EDA reports all have a comparable structure and paragraph headings. Below you see the main paragraphs and their global respective content, in a typical EDA report:
+
+$\pagebreak$ <!-- LaTeX, adds a page break -->
+
+| Paragraph         | Contents                                            |
+|:------------------|:----------------------------------------------------| 
+| Packages          | Which packages are needed for this analysis/report  |
+| Data load         | Code to load dataset and data origin                | 
+| Unique values     | What are the unique values / coding errors?         | 
+| Variable types    | What are the types of the variables (double etc.)   |
+| Missingness       | What are missing values and how are they coded      |
+| Distributions     | How does the distribution of the data/groups look?  |
+| Correlations      | Are (some) variables correlated? Correlation matrix |
+| Exploratory Plots | Exploratory plots to show trends in the data        |
+| Descriptive stats | Mean, standard deviation, max, min of variables     |
+| Conclusions       | Major observations and suggestion for further (formal steps) |
+
+## Packages
+Packages and self-written functions are loaded.
+```{r, packages}
+source(here::here("participant_cases", "R", "rotate_axis_labels.R"))
+library(tidyverse)
+library(here)
+library(haven)
+library(naniar)
+library(tools)
+library(corrr)
+library(corrplot)
+library(amelia)
+```
+
+## Data load
+The dataset recieved from ... on 11 April 2019 came accompanied with the following email:
+
+```
+Beste ... 
+
+in de bijlage een dataset, waarin de PSK_T0 de afhankelijke variabele is.
+De andere variabelen kunnen als onafhankelijke gezien worden.
+
+een vriendelijke groet,
+
+...
+
+```
+
+### Data information
+Most of the time the information you recieve as a data scientist is limited. In this case not much information was provided on beforehand:
+
+### Validation
+One way to validate the match between the file and the analysis (and output of that analysis) is through a 'sumcheck'. The idea is that every file has it's own unique fingerprint on the basis of it's content.
+To calculate a fingerprint, a number of so-called 'hashing' systems have been developed. A simple one is the 'md5 sumcheck' hash.
+
+Usually md5sums are calculated from a file and the resulting hash-key is stored in proximity to the data file. Preferabley in the same folder, carrying the same base name, with addition of "_md5sum.txt" to the orinal name of the datafile. 
+
+The md5sums can be calculated using the function `md5sum` from the `{tools}` package, or using the Linux Terminal and the Bash command:
+
+`md5sum path_to_datafile_name > path_to_data_file_name_md5sum.txt`
+
+Here we generate the md5sum from within R with `tools::md5sum()`. Next we load the .sav (SPSS archive) file. And validate the md5sum.
+This script will issue an ERROR if the md5sum file is absent, or if the hash is incorrect. It will also produce an ERROR if the number of records of the current version of the datafile you are using is different from the one used to generate this report. 
+
+```{r, eval=FALSE}
+## validation of the data with md5 sum
+## produces a 32-character encrypted hash string that is unique for this datafile
+
+md5sum <- tools::md5sum(files = here::here(
+  "participant_cases",
+  "data-raw",
+  "D010",
+  "Cursus R databse.sav")) %>% 
+    enframe()
+
+
+
+  
+## write filename and md5sum hash to file  
+write_lines(md5sum, path = here::here(
+  "praticipant_cases",
+  "data-raw",
+  "D010",
+  "Cursus R databse_sav_md5sum.txt"))
+
+
+```
+
+The version of the data that the analysis of the current document was based on has md5sum key: 
+
+`6b1084b7eb807088701cabfa3b980db7`
+
+This key should be compared to the version of the file that you want to use to reproduce the analysis below.
+
+To check the md5sum of your version of the data:
+```
+tools::md5sum("path_to_your_version_of_the_data_file")
+```
+The output should match the md5 key above.
+
+### Total record number
+A simpeler method of data validation is to check the match between the expected total number of records to the total number of records available in the loaded dataset. Mind that this is a very simple check and it does not garantuee full validation. 
+
+The expected number of records for the correct version of the data is
+`18424`
+
+Below we load the data and perform the two validation checks:
+
+ - Md5 sums
+ - Total number of records
+ 
+The `stopifnot()` function is a handy tool to disable the script from executing if the validation rules are not compliant.
+
+$\pagebreak$ <!-- LaTeX pagebreak -->
+
+```{r, data_load}
+## haven 
+## foreign
+data <- read_sav(file = here::here("participant_cases",
+  "data-raw",
+                                   "D010",
+                                   "Cursus R databse.sav")) ## mind the typo
+
+
+## total number of records: 
+x <- nrow(data) * ncol(data)
+
+## hardcode number of record in code to check version
+stopifnot(x == 18424)
+
+## compare current md5sum to key
+stopifnot(
+tools::md5sum(here::here(
+  "participant_cases",
+  "data-raw",
+  "D010",
+  "Cursus R databse.sav")) ==
+    "6b1084b7eb807088701cabfa3b980db7"
+)
+```
+
+The advantage of using labelled variables in SPSS is evident: information about the variable is stored together with the data. We can access this information (also sometimes referred to as colum data) in R using:
+```{r}
+col_data <- lapply(data, function(x) attributes(x)$label)
+col_data
+
+ind <- map_lgl(col_data, is.null)
+cold_data_df <- col_data[!ind] %>% enframe()
+```
+
+
+
+### Get individual labels
+To get individual labels for each variable
+
+```{r}
+col_data$locatie_klacht %>% knitr::kable()
+
+```
+
+We can see that most variables are labelled, some are not (`NULL`)
+
+## Unique values
+To assess the correct variable type below we need to check the unique values of each variable. This will tell you what type of data is contained in each variable (column) of the dataset(s).
+```{r}
+unique_values <- purrr::map(data, unique) 
+unique_values
+```
+
+There are a couple of remarkable things:
+
+ - Some variables seem coded with digits, but also contain strings (e.g. `Werksetting` and `ip9_T0`)
+ - There are a few records coded with the string "999". I suspect this is an alternative annotation to indicate NA (missing values). It is a common practice for some fields or for people working with different tools than R to use a value for NA that does not (or cannot), normally occur in the data. In R this is not recognized as an `NA` value and it is feasible to do some recoding to get rid of these "999" values.
+ 
+Below we will recode these to be actual NA values and investigate the missingness further.
+
+### Variables parsed while loading
+Sometimes you can also learn whether there is something strange in the data when looking at the type of column after the dataload. Especially when you use functions from the tidyverse `{readr}` package.
+The functions from `{readr}` use a prediction model to assess the intended type of each column when a datafile is parsed. More information can be obtained from chapter "Importing Data" from the R4DS book.
+
+Below we review the type of the columns in relation to the data of the first few rows of the loaded data. Can you spot the peculiarities?
+
+```{r}
+head(data, 10)
+```
+
+Most columns show numeric values, like column `locatie_klacht` or `DTF`, yet they were read-in by the `read_sav()` function from the `{haven}` package as character variables. The SPSS labels that are also vissible in the 'pretty-print' of the data tibble, reviel the secret. Most variables that got parsed as character are actually categorical factor variables. Why were they parsed as characters and not as factors or even doubles (numeric)? 
+For two reasons: 
+
+ - Tidyverse readr and haven parsers never write strings as factors. 
+ - Probably the variables that were parsed as characters contain not only nummeric values but also strings. Coercion rules state that the object combining numerical values and strings can only be converted to a character (and than if applicable to a factor) 
+ 
+This minimal example shows the above to be true.
+
+```{r}
+## dataframe columns
+read_csv("colA, colB
+         1, 2
+         3.77, 4.66
+         3, 5
+         test, 4"
+         ) 
+
+
+read_csv("colA, colB
+         1, 2
+         3.77, 4.66
+         3, 5
+         test, 4"
+         ) %>%
+  mutate(colA = as_factor(colA))
+
+## indivicual vectors
+A <- c(1,3.77,3, "test")
+typeof(A)
+B <- c(2, 4.66, 5, 4)
+typeof(B)
+
+```
+
+Because `colA` contains the string `"test"` `read_csv` has to parse it as a character variable. `colB` only contains numeric values, so `read_csv()` will parse it as a double variable.
+The individual vectors also shows the coercion of vector A to a "character" vector and vector B to a "double". We can also convert colA to a factor with `as_factor()` from `{forcats}`.
+Or, maybe more feasible in this example, we could dicide that the value "test" is an entry-error and label it as an `NA`
+
+```{r}
+
+read_csv("colA, colB
+         1, 2
+         3.77, 4.66
+         3, 5
+         test, 4"
+         ) %>%
+  replace_with_na_all(condition = ~.x == "test")
+
+```
+
+Back to the case:
+
+## Missingness
+In order to get an idea on which variable contain the value "999" we write our own function with a regular expression looking for a specific entry in a specific variable (x). 
+We apply the function to our list of unique value from the chunk above to get a named integer vector, indicating for each variable whther that variable contains the "999" string (value = 1), or not (value = 0). This integer is than converted to a logical vectord and used as an index to get the actual variable names in a vector for later use.
+
+```{r }
+## get all "999" values as a logical index, per variable
+get_999 <- function(x, entry){
+  ind <- str_detect(string = x, pattern = entry)
+  sum(ind)
+}
+
+## loop the get_999 function over all columns, convert to lgl 
+has_999 <- map_int(unique_values, get_999, entry = "999") %>% 
+ as.logical() 
+
+## select only those columns that have a "999" value somewhere
+var_with_999 <- names(data)[has_999] %>% 
+  na.omit() %>%
+  as.vector() %>%
+  print()
+```
+
+In oder to get a complete picture on the missingness in this dataset we need to recode the "999" values into `NA` values.
+
+### Recoding records ("999" -> `NA`)
+see also: https://cran.r-project.org/web/packages/naniar/vignettes/replace-with-na.html
+
+```{r}
+## replace all "999" values in all variables
+
+data_clean <- data %>% 
+  replace_with_na_all(condition = ~.x == "999")
+
+map(data_clean, unique) ## the "999" entries are gone.
+```
+
+### Visualize missingness in the data
+see also:
+https://cran.r-project.org/web/packages/naniar/vignettes/naniar-visualisation.html
+
+Now that we recoded all missing values in the data to actual `NA` values that make sense to R, we can start exploring the data and the missingness in more detail.
+
+To get a genearal idea on the total mssingness (records coded with formal value `NA` in R)
+```{r, missingness}
+vis_miss(data)
+
+## total sum NA values
+sum(is.na(data))
+
+gg_miss_upset(data)
+```
+
+Sum of NA in each variable 
+and make a ranked bar plot
+```{r}
+map_df(data_clean, function(x){sum(is.na(x))}) %>%
+  gather(geslacht:som_ord_T0, key = "parameter", value = "value") %>%
+  ggplot(aes(x = reorder(as_factor(parameter), -value), y = value)) +
+  geom_col() +
+  theme_bw() + rotate_axis_labels(axis = "x", angle = 90)
+
+
+```
+
+## Variable types
+After loading the data, and assessing (and maybe adapting NA values), the types of the variables can be assessed and possible adapted. 
+We already assessed that some variables containing numeric values were converted to character. This tells us that there are string-values in these variables.
+Let's get the datatypes and the head of the data again 
+
+```{r}
+map(data_clean, typeof)
+head(data_clean)
+
+attr(data_clean, "variable.labels")
+
+attr(data, "variable.labels")
+
+
+data$Werkstatus <- as_factor(data$Werkstatus)
+
+data$
+
+class(data$Werkstatus)
+
+names(data)
+
+
+
+```
+
+### Using variable labels to learn more (maybe about coding mistakes?)
+Above we investigated the variable labels that were assigned to the variables in the original SPSS file. We can access these in the `col_data` object. Maybe these labels will provide more insight.
+
+Below we look at the unique values in every variable of our cleaned data. And we compare these with the labels, do you see the mismatch?
+
+```{r}
+unique_values_clean <- map(data_clean, unique)
+col_data
+```
+
+Let's zoom in on one of the variables:
+
+`Werksetting` 
+
+If we look at the labels for `Werksetting` we expect to see only `r  length(unique(col_data$Werksetting))` possible values in this column: 
+
+```{r} 
+col_data$Werksetting
+```
+
+If we look at the actual values for this column:
+```{r}
+unique_values_clean$Werksetting
+```
+
+We see a striking discrepacy between the intended labels and the actual values in this variable.
+Probably "Eerste l" should have been coded as "1". Also striking is that the intended label "2" (Tweede lijn) en "3" (Derde lijn) do not exist in the data. 
+
+In order to assess whether these are really entry or conding errors we have to contact the supplier of the data. We can than decide what to do: relabel, remove, recode to `NA` or even recieve a new updated datafile from the supplier?
+
+## Distributions
+Data distrubtion apply only to numeric data and can provide insight in:
+
+ - How are the values (between groups and overall) related and distributed
+ - Are there extreme outliers and in which variable or group
+
+There are a number of graphs with which you can study ditributions and outliers. Usually it is good to combine a number of different plot types into one analysis to get a complete picture.
+
+Below we first select the numeric variables only. Mind that when you should decide to relabel the data in the above step you would end up with more variables to study.
+```{r}
+## select only numeric variables
+is_numeric_lgl <- map_lgl(data, is.numeric)
+
+names_numeric <- names(data)[is_numeric_lgl]
+
+## select data with only numeric vars
+data_numeric <- data %>%
+  select(names_numeric) ## 22 vars left that are numeric
+
+table(data$geslacht)
+
+```
+
+### Reshape for ggplot
+
+The `{ggplot2}` package works best with dataframes in long (or so-called stacked) format. Next we gather all variables into one column and the values in another.
+
+```{r}
+names(data_numeric)
+data_nummeric_long <- data_numeric %>%
+  gather(leeftijd:som_ord_T0, 
+         key = "parameter",
+         value = "value")
+```
+
+### Overall distribution
+We can look at the overall distribution of all numeric values in the data with a histogram or boxplot.
+```{r}
+data_nummeric_long %>%
+ggplot(aes(x = log10(value))) +
+  geom_histogram()
+
+## or
+data_nummeric_long %>%
+ggplot(aes(y = log10(value))) +
+  geom_boxplot() +
+  coord_flip()
+
+data_nummeric_long %>%
+  dplyr::filter(value > 1000)
+
+
+```
+
+We have a long tailed ditribution in both plots, suggesting outliers on the high end of the `value` variable. But we have all data here together, so maybe the scale of all variables is very unequal or there are group effects that are masked?
+
+We can study the different scale of the variables with a boxplot per variable. In this way we can also quickly spot outliers.
+
+```{r}
+
+data_nummeric_long %>%
+  ggplot(aes(x = parameter,
+             y = value)) +
+  geom_boxplot(aes(group = parameter)) +
+  rotate_axis_labels(axis = "x", angle = 90, hjust = 1)
+  
+```
+It seems we have one variable which has a very diffrent scale than all the others. The extreme high value of this `duur_klachten` variable maskes our overview. Try a log10 transformation on the y-axis to do some rescaling of all variable values. 
+
+```{r}
+data_nummeric_long %>%
+  ggplot(aes(x = parameter,
+             y = log10(value))) +
+  geom_boxplot(aes(group = parameter)) +
+  rotate_axis_labels(axis = "x", angle = 90)
+
+```
+
+One variable in the data has been labelled by the supplier as the responsive or so-called dependent variable `PSK_1_T0`. Let's examine the distribution of this variable.
+
+```{r}
+typeof(data_clean$PSK_1_T0)
+data_clean %>%
+  ggplot(aes(x = PSK_1_T0)) +
+  geom_histogram(bins = 20)
+
+```
+What can you conclude from this histogram?
+
+## Correlations
+To investigate co-variates or autocorrelation we can generate a correlation matrix. We can only do this using the true numeric variables in the data: `leeftijd`, `duur_klachten` and `PSK_1_T0`. Most other variables in the data are in fact categorical variables (questionaire scores)
+
+```{r}
+data_numeric %>%
+  dplyr::select(leeftijd, 
+                duur_klachten, 
+                PSK_1_T0) %>%
+  na.omit() %>%
+  correlate() %>%
+  rearrange() %>%
+  shave() %>%
+  rplot()
+```
+
+There is no evident large correlation between these numeric variables.
+
+## Exploratory plots
+
+To start the exploratory plot iteration, I usually start bij plotting a scatter plot using the dependent variable, maybe another numeric variable and some evident grouping variables for which you would like to study their relationship with the dependent variable.
+
+
+For this step we will use the `data_clean` version of the dataset
+
+### Age
+
+```{r}
+names(data_clean)
+data_clean %>%
+  ggplot(aes(x = leeftijd,
+             y = PSK_1_T0)) +
+  geom_point()
+```
+
+This plot clearly shows that the dependent variable is actually also a cathegorical variable, with a limited amount of discrete outcome values. There is no evident correlation between `PSK_1_T0` and `leeftijd`, which we already learned from the correlation plot.
+
+Let's add some dimensions (vriables) to the dotplot.
+
+```{r}
+names(data_clean)
+data_clean %>%
+  ggplot(aes(x = leeftijd,
+             y = PSK_1_T0)) +
+  geom_point(aes(colour = locatie_klacht))
+```
+
+Again we do not see any evident clustering of equally coloured points, indicating no relationship between the lcation of the medical complaint, age and `PSK_1_T0`
+
+### Gender 
+Maybe study a different relationship? Gender?
+
+```{r}
+names(data_clean)
+data_clean %>%
+  ggplot(aes(x = leeftijd,
+             y = PSK_1_T0)) +
+  geom_point(aes(colour = geslacht), alpha = 0.3)
+```
+
+Remarkably, gender "1" seems overrepresented and there is one `NA` in this variable.
+
+Using facets reveals this more clearly.
+
+```{r}
+names(data_clean)
+data_clean %>%
+  ggplot(aes(x = leeftijd,
+             y = PSK_1_T0)) +
+  geom_point() +
+  facet_wrap(~ geslacht)
+```
+
+If we want to learn which gender is coded with which label we can access the label information (`col_data`) again.
+
+
+```{r}
+cold_data_df %>%
+  dplyr::filter(name == "geslacht") %>%
+  dplyr::select(value) %>%
+  unlist
+```
+
+We could repeat this iteration over all variables, bu that would be tedious. Let's concentrate on a cluster of variables `ip_...`
+
+
+```{r}
+col_data
+names(data_clean)
+data_clean %>%
+  dplyr::select(PSK_1_T0, ip1_T0:ip8_T0) %>%
+  gather(ip1_T0:ip8_T0, 
+         key = "parameter",
+         value = "value") %>%
+  ggplot(aes(x = value,
+             y = PSK_1_T0)) +
+  geom_point() +
+  facet_wrap(~ parameter, nrow = 4)
+```
+
+### Angst en depressie
+```{r}
+
+data_clean %>%  
+  ggplot(aes(x = dep_ord_T0,
+             y = PSK_1_T0)) +
+  geom_point()
+
+## range scale for fear
+data_clean %>%  
+  ggplot(aes(x = angsomsc_T0,
+             y = PSK_1_T0)) +
+  geom_point() +
+  geom_smooth()
+
+## ordinal scale for fear
+data_clean %>%  
+  ggplot(aes(x = ang_ord_T0,
+             y = PSK_1_T0)) +
+  geom_point() 
+## the inital trend of positive correlation between anxiety and PSK disappears
+
+
+```
+
+### Pain
+```{r}
+data_clean %>%  
+  ggplot(aes(x = ang_ord_T0,
+             y = pijn_acuut_chronisch)) +
+  geom_point(position = "jitter") 
+
+data_clean %>%  
+  ggplot(aes(x = ang_ord_T0,
+             y = pijn_acuut_chronisch)) +
+  geom_point(position = "jitter") 
+
+
+```
+
+### Duration of clinical complaints
+```{r}
+data_clean %>%  
+  ggplot(aes(x = duur_klachten,
+             y = PSK_1_T0)) +
+  geom_point(position = "jitter") 
+
+```
+
+## Descriptive statistics
+
+
+
+
+

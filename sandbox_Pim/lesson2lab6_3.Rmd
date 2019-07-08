@@ -1,0 +1,135 @@
+---
+title: "labs_6-3_exercise to R"
+output: html_document
+---
+
+
+
+## R Markdown
+
+```{r, root_1, include=FALSE}
+## defines the root of the project for later use
+require("rprojroot") || utils::install.packages("rprojroot")
+library(rprojroot)
+root <- find_root_file(criterion = is_rstudio_project)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, 
+                      warning = FALSE, 
+                      message = FALSE, 
+                      error = FALSE,
+                      results = 'hide',
+                      fig.show = 'hide')
+```
+
+```{r}
+library(tidyverse)
+library(readr)
+```
+
+```{r}
+simple_IO <- read_csv(paste0(root, "/data/simple-IO.csv"))
+dim(simple_IO)
+## [1] 100  11
+
+ncol(simple_IO)
+
+## [1] 11
+
+nrow(simple_IO)
+
+## [1] 100
+
+ view(simple_IO)
+```
+```{r}
+ncol(simple_IO)
+nrow(simple_IO)
+```
+```{r}
+summary(simple_IO)
+```
+
+##paste
+
+```{r}
+a <- c("a", "b", "c", NA)
+b <- c(1:4)
+c <- c(6:8, NA)
+d <- c(1.3, 1.6, 6.7)
+e <- as.integer(d)
+f <- as.integer(a)
+g <- as.numeric(a)
+
+(z <- paste(a, b, c))
+(zz <- paste0(a, b, c))
+(zzz <- paste0(e, f, g))
+```
+```{r}
+zzz
+
+```
+```{r}
+v1_4a <- c(10.5,20.4,30.5,28.9,5.4)
+V1_4b <- seq(50, -10)
+V1_4c <- seq(-10, 50)
+V1_4d <- append(V1_4c,5)
+
+v1_4e <- c(1,0,1,0,1)%>%
+  rep(100)
+v1_4f <- runif(100, min = -1, max = 1)
+
+hist(v1_4f)
+set.seed(44456)
+v1_4f <- runif(100, min = -1, max = 1)
+
+hist(v1_4f)
+mean(v1_4f)
+
+v1_4f[5] <- NA
+mean(v1_4f, na.rm = TRUE)
+```
+ 
+```{r}
+data_5 <- c(1:12)
+matrix(data = data_5, nrow = 3, ncol = 4, byrow = FALSE,
+       dimnames = NULL)
+
+```
+
+```{r}
+data_5b <- c(1,1,1,2,2,2,3,3,3,4,4,4)
+matrix(data = data_5b, nrow = 3, ncol = 4, byrow = FALSE,
+       dimnames = NULL)
+
+```
+
+```{r}
+sum(data_5, na.rm = TRUE)
+sum(data_5b, na.rm = TRUE)
+
+```
+
+```{r}
+v2_6a <- c(1.8, 4.5, 10.1, 8.3, 7.5)
+nr <- as.numeric(v2_6a)
+
+v3_6a <- c(1, 3, 5, 7, 11)
+prime <- as.numeric(v3_6a)
+
+v4_6a <- c("abc1", "foo2", "bar3", "app5","-")
+name <- as.character(v4_6a)
+
+v5_6a <- c(TRUE, FALSE, FALSE, TRUE, FALSE)
+valid <- as.logical(v5_6a)
+
+library(tibble)
+tibble_(nr)
+
+test_tibble <- tibble(nr, prime, name, valid)
+tibble(names(`x` = 1))
+sum(test_tibble)
+str(test_tibble)
+```
+

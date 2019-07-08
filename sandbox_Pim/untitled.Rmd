@@ -1,0 +1,29 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r}
+require("rprojroot") || utils::install.packages("rprojroot")
+library(rprojroot)
+root <- find_root_file(criterion = is_rstudio_project)
+
+```
+
+```{r}
+files <- dir("data/", pattern = "\\.csv$", full.names = TRUE)
+allfiles2 <-purrr::map_dfc(files, read_csv, col_names = c("1:10000000"))
+
+do.call(rbind.data.frame, allfiles2)
+library(tidyverse)
+head(files)
+allfiles
+
+
+```
+
