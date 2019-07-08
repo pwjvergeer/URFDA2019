@@ -1,0 +1,130 @@
+---
+title: "RStudio"
+author: "Marc A.T. Teunis"
+date: "`r Sys.Date()`"
+output:
+  ioslides_presentation: 
+    highlight: pygments
+    widescreen: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## RStudio IDE
+RStudio is an Integrated Development Environment that helps you be more productive with R. To use RStudio you need to first install R itself:
+
+The lastest version of R can be installed from the Comprehensive R Archive Network `CRAN`: 
+
+https://cran.r-project.org/
+
+## Tutorials
+Several good tutorials on starting with RStudio:
+
+ - https://www.sitepoint.com/introduction-r-rstudio/\
+ 
+
+## Preview releases (daily builds)
+For the brave and impatient:
+RStudio releases it's daily builds (test versions) on:
+
+https://www.rstudio.com/products/rstudio/download/preview/
+
+Here you can review the latest changes and improvements of the IDE.
+
+## Cheatsheet:
+This link will download the pdf of the RStudio cheatsheet:
+https://github.com/rstudio/cheatsheets/raw/master/rstudio-ide.pdf
+
+## More important cheatsheets that can help:
+https://www.rstudio.com/resources/cheatsheets/
+
+## A few tricks 
+Go over them to learn about a few options in RStudio
+
+## If you are really stuck
+If R hangs, restart R by: `Session` -> `Restart R`
+
+If login into the RStudio Server fails, sent me an email, I will reset your account for you
+
+## New File
+You can create new files under `File`. Choose from the list the file type that you want to create.
+
+## R-scripts
+ - R-script; used to run single actions, functions, cleaning, file-managment, a single graph or automated actions. 
+ - Use `source("path_to_r_script") to call an individual script. 
+ - Runs begin-to-end, can contain dependencies on other files
+ 
+## R Markdown
+
+ - In lab 4 we saw tha value of RMarkdown
+ - Exercises have to be made in RMarkdown during the course. 
+ - It is a very flexible and multi-pupose format to combine code, text and code-output in one product
+ - Suitable to generate different formats: MS Word, MS Power Point, HTML Slide shows, PDF, HTML documents, Websites, Blogs, Books
+ - Able to include different types of code chunks: R, Python, Bash, Stan, Perl etc.
+ - Out of scope of this course
+ 
+## Clear Console
+To clear the contents of the console: `Edit` -> `Clear Console`
+
+## Clear the `Global Environment`
+To clear the global environment you have two options:
+Either by using a line of code (be carefull not to put this in code you share with other, you will accentially clear **THEIR** environment, which may cause substraction of Karma points)
+
+```{r, eval=FALSE}
+## create dummies:
+x <- runif(n = 10)
+y = rnorm(n = 100)
+z = "this is character dummy"
+## remove them
+rm(list=ls())
+```
+
+Or in RStudio: Click the small `stick-broom` in the `Environment` pane
+
+## The `stick-broom` icon 
+You will find the `stick-broom` in other panes in RStudio as well, it clears the object in the `Plots` and the `Viewer` panes respectively.
+
+## Background theme
+To change the theme: `Tools` -> `Global Options` -> `Appearance` -> Choos an `Editor Theme` that is appealing to you. Dark background is most relaxing for your eyes.
+
+## Inline output disable
+When you RStudio for the fist time amnd you start a new RMarkdown, the code output is shown inline of the RMarkdown document in the cript editor. It is best to disable this: 
+`Tools` -> `Global Options` -> `R Markdown` -> Uncheck the option "Show output inline for all ...."
+
+## Reformat code
+To force you to adhere to the code style formatting:
+You can reformat code according the code style suggested by Hadley Wickham here:
+
+using `Edit` -> `Reformat Code`
+See what happens to the code formatting if you select the code below and apply reformatting to it.
+
+## Linux (Bash or PowerShell in Windows) Terminal
+Sometimes we want to able to do some operations in Linux. For example seeing the head of a large file, without loading it into R first, or install addional software (in Linux you would need root acces or so-called `sudo` privileges for this).
+
+To start a new `Terminal`: `Tools` -> `Terminal` -> `New Terminal`
+Try it below and copy (Ctrl + C), paste (Shift + Insert) the following Bash code in your new `Terminal`
+
+```{Bash, eval = FALSE}
+head -30 data/allijn.tsv
+```
+
+## Reading data - help
+To read data RStudio has an interactive help: 
+Choose `File` -> `Import Dataset` -> `From Text (readr)` or the appropriate file type
+
+ - Choose the file that you want to import under the `Browse` button
+ - An interactive Console will appear, choose the right settings such as headers on/off, delimiter etc. 
+ - Much like in the import function from Excel you will see a preview of the datatable.  - In the bottom right corner the appropriate R code is displayed. 
+ - You can copy that code to the clipboard and paste it into a script.
+ - Now execute the script and the datafile loads. 
+ - If you want you can first adapt the variable name that is chosen to store the datframe in
+
+## Try load data
+Try to load the datafile "/data/kiemingen.xlsx" the way described above.
+
+Think about why you should copy - paste the R-code to a script to load a file!?
+
+
+

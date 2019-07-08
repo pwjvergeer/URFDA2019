@@ -1,0 +1,76 @@
+---
+title: "gganimate; introducing animations with ggplot2 code"
+author: "Marc A.T. Teunis"
+date: '`r Sys.Date()`'
+output:
+  ioslides_presentation: 
+    highlight: pygments
+    widescreen: yes
+---
+
+```{r, root_1, include=FALSE}
+## defines the root of the project for later use
+require("rprojroot") || utils::install.packages("rprojroot")
+library(rprojroot)
+root <- find_root_file(criterion = is_rstudio_project)
+```
+
+```{r, knitr_setup, warning=FALSE, error=FALSE, message=FALSE, include=FALSE}
+## setting knitr options
+if (!require("knitr")) utils::install.packages("knitr")
+library(knitr)
+
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, error = FALSE, message = FALSE, fig.width = 3, fig.height = 3)
+knitr::opts_knit$set(root.dir = root)
+```
+
+# The original Bubble Chart on Life Expectancy
+http://www.gapminder.org/tools/#_locale_id=en;&chart-type=bubbles
+
+# ggnanimate example
+
+Packages:
+```{r}
+library(ggplot2)
+library(gapminder)
+library(gganimate)
+library(gifski)
+library(tidyverse)
+
+## setting them to black and white for all ggplots to come
+theme_set(theme_bw())
+```
+
+## Example data
+```{r}
+
+ggplot(gapminder, aes(gdpPercap, lifeExp, size = pop, colour = country)) +
+  geom_point(alpha = 0.7, show.legend = FALSE) +
+  scale_colour_manual(values = country_colors) +
+  scale_size(range = c(2, 12)) +
+  scale_x_log10() +
+  facet_wrap(~ continent) +
+  # Here comes the gganimate specific bits
+  labs(title = 'Year: {frame_time}', x = 'GDP per capita', y = 'life expectancy') +
+  transition_time(year) + ## regulation the actual layers for the animation
+  ease_aes('linear')
+```
+
+```{r}
+library(av)
+
+## there are only five Months in the airquality dataset
+
+p <- ggplot(airquality, aes(Day, Temp)) + 
+  geom_line(size = 2, colour = 'steelblue') + 
+  transition_states(states = Month, 
+                    state_length = 4, 
+                    transition_length = 6) + 
+  shadow_mark(size = 1, colour = 'grey') 
+#+
+ # labs(title = 'Month: {frame_time}')
+
+animate(p, renderer = av_renderer())
+```
+
+
